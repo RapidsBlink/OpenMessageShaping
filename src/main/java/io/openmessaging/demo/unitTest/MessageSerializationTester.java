@@ -1,13 +1,9 @@
 package io.openmessaging.demo.unitTest;
 
-import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
 import io.openmessaging.MessageHeader;
-import io.openmessaging.Producer;
 import io.openmessaging.demo.*;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -28,9 +24,9 @@ public class MessageSerializationTester {
             message.putHeaders(MessageHeader.TOPIC, "TOPIC" + i);
             message.putHeaders("h", 111L);
 
-            byte[] binaryData = msgSer.serializeIntoNewByteArr((DefaultBytesMessage) message);
+            byte[] binaryData = msgSer.serialize((DefaultBytesMessage) message);
             DefaultBytesMessage ret = msgDser.deserialize(binaryData);
-            byte[] binaryData2 = msgSer.serializeIntoNewByteArr(ret);
+            byte[] binaryData2 = msgSer.serialize(ret);
             LOGGER.info("TOPIC: " + ret.headers().getString(MessageHeader.TOPIC));
 
             for (int j = 0; j < binaryData.length; j++) {

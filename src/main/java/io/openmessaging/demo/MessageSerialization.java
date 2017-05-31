@@ -12,7 +12,7 @@ import java.util.List;
 public class MessageSerialization {
     private static final int MAX_MESSAGE_SIZE = 1024 * 512;
     private final ByteBuffer keyValueByteBuffer;
-    private final ByteBuffer serializationMessageByteBuffer;
+    private final ByteBuffer messageByteBuffer;
 
     private final List<YchePair<String, Integer>> integerList = new ArrayList<>();
     private final List<YchePair<String, Long>> longList = new ArrayList<>();
@@ -21,7 +21,7 @@ public class MessageSerialization {
 
     public MessageSerialization() {
         keyValueByteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
-        serializationMessageByteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
+        messageByteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
     }
 
     private void putLenAndBytesToByteBuffer(byte[] bytes, ByteBuffer byteBuffer) {
@@ -85,7 +85,7 @@ public class MessageSerialization {
         keyValueByteBuffer.flip();
     }
 
-    public ByteBuffer serialize(DefaultBytesMessage message, ByteBuffer messageByteBuffer) {
+    private void serializeDetail(DefaultBytesMessage message) {
         // write to buffer sequentially
         messageByteBuffer.clear();
 
@@ -104,21 +104,25 @@ public class MessageSerialization {
 
         // 3rd: make buffer readable
         messageByteBuffer.flip();
-        return messageByteBuffer;
+    }
+
+    public void serialize(DefaultBytesMessage message, ByteBuffer byteBuffer) {
+        serializeDetail(message);
+        byteBuffer.put(messageByteBuffer);
     }
 
     public int serialize(DefaultBytesMessage message, byte[] byteArr, int offset) {
-        serialize(message, serializationMessageByteBuffer);
-        for (int i = 0; i < serializationMessageByteBuffer.limit(); i++) {
-            byteArr[offset + i] = serializationMessageByteBuffer.get();
+        serializeDetail(message);
+        for (int i = 0; i < messageByteBuffer.limit(); i++) {
+            byteArr[offset + i] = messageByteBuffer.get();
         }
-        return serializationMessageByteBuffer.limit();
+        return messageByteBuffer.limit();
     }
 
-    public byte[] serializeIntoNewByteArr(DefaultBytesMessage message) {
-        serialize(message, serializationMessageByteBuffer);
-        byte[] retBytes = new byte[serializationMessageByteBuffer.limit()];
-        serializationMessageByteBuffer.get(retBytes);
+    public byte[] serialize(DefaultBytesMessage message) {
+        serializeDetail(message);
+        byte[] retBytes = new byte[messageByteBuffer.limit()];
+        messageByteBuffer.get(retBytes);
         return retBytes;
     }
 }
