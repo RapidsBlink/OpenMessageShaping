@@ -14,16 +14,15 @@ import java.util.concurrent.locks.ReentrantLock;
 public class DataDumper {
     static String rootPath;
     static long DATA_FILE_SZIE = 8 * 1024 * 1024 * 1024; // 6GB
-    static int MINI_CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
     static int MINI_CHUNK_TAIL_SIZE = 256 * 1025; // 256KB
 
     static RandomAccessFile dataFile;
     static FileChannel dataFileChannel;
     static DataFileIndexer dataFileIndexer = new DataFileIndexer();
+    static int MINI_CHUNK_SIZE = dataFileIndexer.MINI_CHUNK_SIZE;
 
     static MappedByteBuffer[] topicMappedBuff = new MappedByteBuffer[dataFileIndexer.INIT_TOPIC_NUMBER];
 
-    static ReentrantLock[] assignMiniChunkLocks = new ReentrantLock[dataFileIndexer.INIT_TOPIC_NUMBER];
     static ReentrantLock[] topicWriteLocks = new ReentrantLock[dataFileIndexer.INIT_TOPIC_NUMBER];
     static AtomicInteger numberOfProducer = new AtomicInteger(0);
     static AtomicInteger numberOfFinished = new AtomicInteger(0);
@@ -42,6 +41,7 @@ public class DataDumper {
             dataFileChannel = dataFile.getChannel();
             for (int i = 0; i < dataFileIndexer.INIT_TOPIC_NUMBER; i++) {
                 topicMappedBuff[i] = null;
+                topicWriteLocks[i] = new ReentrantLock();
             }
         }
         initLock.unlock();
@@ -87,12 +87,14 @@ public class DataDumper {
 //        int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
 
         //if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < MINI_CHUNK_TAIL_SIZE) || topicMappedBuff[topicNumber] == null) {
-        unmap(topicMappedBuff[topicNumber]);
-        dataFileIndexer.topicMiniChunkNumber[topicNumber]++;
+        if(topicMappedBuff[topicNumber] != null) {
+            topicMappedBuff[topicNumber].force();
+            unmap(topicMappedBuff[topicNumber]);
+        }
         dataFileIndexer.topicMiniChunkLengths[topicNumber][dataFileIndexer.topicMiniChunkNumber[topicNumber]] = 0;
         long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkNumber[topicNumber];
         topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
-
+        dataFileIndexer.topicMiniChunkNumber[topicNumber]++;
         //load into physical memory
         //topicMappedBuff[topicNumber].load();
         // }

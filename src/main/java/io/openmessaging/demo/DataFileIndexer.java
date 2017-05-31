@@ -7,10 +7,11 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Created by yche on 5/31/17.
  */
-class DataFileIndexer implements Serializable {
+public class DataFileIndexer implements Serializable {
     public int INIT_TOPIC_NUMBER = 100;
     public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = 20;
-    int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
+    public int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
+    public int MINI_CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
 
     public String[] topicNames = new String[INIT_TOPIC_NUMBER];
     public ConcurrentHashMap<String, Integer> topicNameToNumber = new ConcurrentHashMap<>(INIT_TOPIC_NUMBER);
