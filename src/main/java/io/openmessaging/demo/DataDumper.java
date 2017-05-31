@@ -53,9 +53,11 @@ public class DataDumper {
 
         MappedByteBuffer buf = topicMappedBuff[topicNumber];
 
-        buf.put(integerToByteArray.putInt(data.length).array());
-        buf.put(data);
-
+        buf.putInt(offset, data.length);
+        offset += Integer.BYTES;
+        for (int i = 0; i < data.length; i++) {
+            buf.put(offset + i, data[i]);
+        }
     }
 
     public int getMessageWriteOffset(int topicNumber, int dataLength) throws IOException {
