@@ -77,21 +77,21 @@ public class DataDumper {
     }
 
     public void assignNextMiniChunk(int topicNumber) throws IOException {
-        assignMiniChunkLocks[topicNumber].lock();
+        //assignMiniChunkLocks[topicNumber].lock();
         int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
         int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
 
-        if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < MINI_CHUNK_TAIL_SIZE) || topicMappedBuff[topicNumber] == null) {
-            unmap(topicMappedBuff[topicNumber]);
-            dataFileIndexer.topicMiniChunkNumber[topicNumber]++;
-            dataFileIndexer.topicMiniChunkLengths[topicNumber][dataFileIndexer.topicMiniChunkNumber[topicNumber]] = 0;
-            long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkNumber[topicNumber];
-            topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
+        //if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < MINI_CHUNK_TAIL_SIZE) || topicMappedBuff[topicNumber] == null) {
+        unmap(topicMappedBuff[topicNumber]);
+        dataFileIndexer.topicMiniChunkNumber[topicNumber]++;
+        dataFileIndexer.topicMiniChunkLengths[topicNumber][dataFileIndexer.topicMiniChunkNumber[topicNumber]] = 0;
+        long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkNumber[topicNumber];
+        topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
 
-            //load into physical memory
-            //topicMappedBuff[topicNumber].load();
-        }
-        assignMiniChunkLocks[topicNumber].unlock();
+        //load into physical memory
+        //topicMappedBuff[topicNumber].load();
+        // }
+        //assignMiniChunkLocks[topicNumber].unlock();
 
     }
 
