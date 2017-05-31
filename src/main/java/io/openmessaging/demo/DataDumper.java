@@ -35,6 +35,7 @@ public class DataDumper {
         // shared by all threads
         initLock.lock();
         if (!isInit) {
+            isInit = true;
             rootPath = fileRootPath;
             dataFile = new RandomAccessFile(fileRootPath + File.separator + "data.bin", "rw");
             dataFile.setLength(DATA_FILE_SZIE);
