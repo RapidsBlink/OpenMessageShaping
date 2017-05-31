@@ -114,7 +114,7 @@ public class DataDumper {
     public void close() throws IOException {
         for (int i = 0; i < dataFileIndexer.INIT_TOPIC_NUMBER; i++) {
             if (topicMappedBuff[i] != null) {
-                topicMappedBuff[i].force();
+                unmap(topicMappedBuff[i]);
             }
         }
         dataFile.close();
