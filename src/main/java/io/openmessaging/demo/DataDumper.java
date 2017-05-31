@@ -28,10 +28,10 @@ public class DataDumper {
     static DataFileIndexer dataFileIndexer = new DataFileIndexer();
 
     static ByteBuffer integerToByteArray = ByteBuffer.allocate(4);
-    static MappedByteBuffer[] topicMappedBuff = new MappedByteBuffer[DataFileIndexer.INIT_TOPIC_NUMBER];
+    static MappedByteBuffer[] topicMappedBuff = new MappedByteBuffer[dataFileIndexer.INIT_TOPIC_NUMBER];
 
-    static ReentrantLock[] assignMiniChunkLocks = new ReentrantLock[DataFileIndexer.INIT_TOPIC_NUMBER];
-    static ReentrantLock[] topicWriteLocks = new ReentrantLock[DataFileIndexer.INIT_TOPIC_NUMBER];
+    static ReentrantLock[] assignMiniChunkLocks = new ReentrantLock[dataFileIndexer.INIT_TOPIC_NUMBER];
+    static ReentrantLock[] topicWriteLocks = new ReentrantLock[dataFileIndexer.INIT_TOPIC_NUMBER];
     static AtomicInteger numberOfProducer = new AtomicInteger(0);
     static AtomicInteger numberOfFinished = new AtomicInteger(0);
 
@@ -40,14 +40,14 @@ public class DataDumper {
         dataFile = new RandomAccessFile(fileRootPath + File.separator + "data.bin", "rw");
         dataFile.setLength(DATA_FILE_SZIE);
         dataFileChannel = dataFile.getChannel();
-        for (int i = 0; i < DataFileIndexer.INIT_TOPIC_NUMBER; i++) {
+        for (int i = 0; i < dataFileIndexer.INIT_TOPIC_NUMBER; i++) {
             topicMappedBuff[i] = null;
         }
         numberOfProducer.incrementAndGet();
     }
 
     public void writeToFile(String topicName, byte[] data) throws IOException {
-        int topicNumber = DataFileIndexer.getAssignedTopicNumber(topicName);
+        int topicNumber = dataFileIndexer.getAssignedTopicNumber(topicName);
 
         int offset = getMessageWriteOffset(topicNumber, data.length + Integer.BYTES);
 
@@ -61,29 +61,29 @@ public class DataDumper {
     public int getMessageWriteOffset(int topicNumber, int dataLength) throws IOException {
         int offset;
         topicWriteLocks[topicNumber].lock();
-        int currentTopicMiniChunkNumber = DataFileIndexer.topicMiniChunkNumber[topicNumber];
-        int currentTopicMiniChunkLength = DataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
+        int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
+        int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
         if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < dataLength) || topicMappedBuff[topicNumber] == null) {
             assignNextMiniChunk(topicNumber);
         }
-        currentTopicMiniChunkNumber = DataFileIndexer.topicMiniChunkNumber[topicNumber];
-        currentTopicMiniChunkLength = DataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
+        currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
+        currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
         offset = currentTopicMiniChunkLength;
-        DataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber] += dataLength;
+        dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber] += dataLength;
         topicWriteLocks[topicNumber].unlock();
         return offset;
     }
 
     public void assignNextMiniChunk(int topicNumber) throws IOException {
         assignMiniChunkLocks[topicNumber].lock();
-        int currentTopicMiniChunkNumber = DataFileIndexer.topicMiniChunkNumber[topicNumber];
-        int currentTopicMiniChunkLength = DataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
+        int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
+        int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
 
         if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < MINI_CHUNK_TAIL_SIZE) || topicMappedBuff[topicNumber] == null) {
             unmap(topicMappedBuff[topicNumber]);
-            DataFileIndexer.topicMiniChunkNumber[topicNumber]++;
-            DataFileIndexer.topicMiniChunkLengths[topicNumber][DataFileIndexer.topicMiniChunkNumber[topicNumber]] = 0;
-            long miniChunkGlobalOffset = DataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * DataFileIndexer.topicMiniChunkNumber[topicNumber];
+            dataFileIndexer.topicMiniChunkNumber[topicNumber]++;
+            dataFileIndexer.topicMiniChunkLengths[topicNumber][dataFileIndexer.topicMiniChunkNumber[topicNumber]] = 0;
+            long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkNumber[topicNumber];
             topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
 
             //load into physical memory
@@ -112,7 +112,7 @@ public class DataDumper {
     }
 
     public void close() throws IOException {
-        for (int i = 0; i < DataFileIndexer.INIT_TOPIC_NUMBER; i++) {
+        for (int i = 0; i < dataFileIndexer.INIT_TOPIC_NUMBER; i++) {
             if (topicMappedBuff[i] != null) {
                 topicMappedBuff[i].force();
             }
@@ -132,19 +132,19 @@ public class DataDumper {
 }
 
 class DataFileIndexer implements Serializable {
-    public static int INIT_TOPIC_NUMBER = 100;
-    public static int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = 10;
-    static int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
+    public int INIT_TOPIC_NUMBER = 100;
+    public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = 10;
+    int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
 
-    public static int topicNumber = 0;
-    public static ConcurrentHashMap<String, Integer> topicNameToNumber = new ConcurrentHashMap<>(INIT_TOPIC_NUMBER);
-    public static long[] topicOffsets = new long[INIT_TOPIC_NUMBER];
-    public static int[] topicMiniChunkNumber = new int[INIT_TOPIC_NUMBER];
-    public static int[][] topicMiniChunkLengths = new int[INIT_TOPIC_NUMBER][];
+    public int topicNumber = 0;
+    public ConcurrentHashMap<String, Integer> topicNameToNumber = new ConcurrentHashMap<>(INIT_TOPIC_NUMBER);
+    public long[] topicOffsets = new long[INIT_TOPIC_NUMBER];
+    public int[] topicMiniChunkNumber = new int[INIT_TOPIC_NUMBER];
+    public int[][] topicMiniChunkLengths = new int[INIT_TOPIC_NUMBER][];
 
-    public static long currentGlobalDataOffset = 0;
-    public static int currentTopicNumber = 0;
-    public static ReentrantLock assignLock = new ReentrantLock();
+    public long currentGlobalDataOffset = 0;
+    public int currentTopicNumber = 0;
+    public ReentrantLock assignLock = new ReentrantLock();
 
     public DataFileIndexer() {
         topicNameToNumber.clear();
@@ -156,7 +156,7 @@ class DataFileIndexer implements Serializable {
 
     }
 
-    static void assignNumberToTopic(String topicName) {
+    void assignNumberToTopic(String topicName) {
         assignLock.lock();
         if (!topicNameToNumber.containsKey(topicName)) {
             topicNameToNumber.put(topicName, currentTopicNumber);
@@ -167,7 +167,7 @@ class DataFileIndexer implements Serializable {
         assignLock.unlock();
     }
 
-    static int getAssignedTopicNumber(String topicName) {
+    int getAssignedTopicNumber(String topicName) {
         if (!topicNameToNumber.containsKey(topicName)) {
             assignNumberToTopic(topicName);
         }
