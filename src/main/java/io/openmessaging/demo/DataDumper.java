@@ -20,7 +20,7 @@ public class DataDumper {
 
     static String rootPath;
     static long DATA_FILE_SZIE = 8 * 1024 * 1024 * 1024; // 6GB
-    static int MINI_CHUNK_SIZE = 8 * 1024 * 1024; // 8MB
+    static int MINI_CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
     static int MINI_CHUNK_TAIL_SIZE = 256 * 1025; // 256KB
 
     static RandomAccessFile dataFile;
