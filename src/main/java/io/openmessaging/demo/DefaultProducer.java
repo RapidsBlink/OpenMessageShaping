@@ -1,85 +1,107 @@
 package io.openmessaging.demo;
 
-import io.openmessaging.BatchToPartition;
-import io.openmessaging.BytesMessage;
-import io.openmessaging.KeyValue;
-import io.openmessaging.Message;
-import io.openmessaging.MessageFactory;
-import io.openmessaging.MessageHeader;
-import io.openmessaging.Producer;
-import io.openmessaging.Promise;
+import io.openmessaging.*;
 
-public class DefaultProducer  implements Producer {
+import java.io.IOException;
+
+public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
-    private MessageStore messageStore = MessageStore.getInstance();
-
     private KeyValue properties;
+
+    private MessageSerialization messageSerialization = new MessageSerialization();
+    private DataDumper dataDumper = null;
 
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
+        try {
+            this.dataDumper = new DataDumper(properties.getString("STORE_PATH"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-
-    @Override public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
+    @Override
+    public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
         return messageFactory.createBytesMessageToTopic(topic, body);
     }
 
-    @Override public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
+    @Override
+    public BytesMessage createBytesMessageToQueue(String queue, byte[] body) {
         return messageFactory.createBytesMessageToQueue(queue, body);
     }
 
-    @Override public void start() {
+    @Override
+    public void start() {
 
     }
 
-    @Override public void shutdown() {
+    @Override
+    public void shutdown() {
 
     }
 
-    @Override public KeyValue properties() {
+    @Override
+    public KeyValue properties() {
         return properties;
     }
 
-    @Override public void send(Message message) {
+    @Override
+    public void send(Message message) {
         if (message == null) throw new ClientOMSException("Message should not be null");
         String topic = message.headers().getString(MessageHeader.TOPIC);
         String queue = message.headers().getString(MessageHeader.QUEUE);
         if ((topic == null && queue == null) || (topic != null && queue != null)) {
             throw new ClientOMSException(String.format("Queue:%s Topic:%s should put one and only one", true, queue));
         }
-
-        messageStore.putMessage(topic != null ? topic : queue, message);
+        byte[] bytes = messageSerialization.serialize((DefaultBytesMessage) message);
+        try {
+            dataDumper.writeToFile(topic != null ? topic : queue, bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override public void send(Message message, KeyValue properties) {
+    @Override
+    public void send(Message message, KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public Promise<Void> sendAsync(Message message) {
+    @Override
+    public Promise<Void> sendAsync(Message message) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public Promise<Void> sendAsync(Message message, KeyValue properties) {
+    @Override
+    public Promise<Void> sendAsync(Message message, KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public void sendOneway(Message message) {
+    @Override
+    public void sendOneway(Message message) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public void sendOneway(Message message, KeyValue properties) {
+    @Override
+    public void sendOneway(Message message, KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public BatchToPartition createBatchToPartition(String partitionName) {
+    @Override
+    public BatchToPartition createBatchToPartition(String partitionName) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public BatchToPartition createBatchToPartition(String partitionName, KeyValue properties) {
+    @Override
+    public BatchToPartition createBatchToPartition(String partitionName, KeyValue properties) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
-    @Override public void flush() {
-
+    @Override
+    public void flush() {
+        try {
+            dataDumper.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
