@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class DefaultKeyValue implements KeyValue {
 
-    private final Map<String, Object> kvs = new HashMap<>();
+    public final Map<String, Object> kvs = new HashMap<>();
     @Override
     public KeyValue put(String key, int value) {
         kvs.put(key, value);
