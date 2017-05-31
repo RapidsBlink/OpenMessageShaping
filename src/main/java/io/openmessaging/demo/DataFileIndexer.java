@@ -12,7 +12,7 @@ class DataFileIndexer implements Serializable {
     public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = 20;
     int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
 
-    public int topicNumber = 0;
+    public String[] topicNames = new String[INIT_TOPIC_NUMBER];
     public ConcurrentHashMap<String, Integer> topicNameToNumber = new ConcurrentHashMap<>(INIT_TOPIC_NUMBER);
     public long[] topicOffsets = new long[INIT_TOPIC_NUMBER];
     public int[] topicMiniChunkNumber = new int[INIT_TOPIC_NUMBER];
@@ -37,6 +37,7 @@ class DataFileIndexer implements Serializable {
             topicNameToNumber.put(topicName, currentTopicNumber);
             topicOffsets[currentTopicNumber] = currentGlobalDataOffset;
             currentGlobalDataOffset += TOPIC_CHUNK_SIZE;
+            topicNames[currentTopicNumber] = topicName;
             currentTopicNumber++;
         }
         assignLock.unlock();
