@@ -14,9 +14,10 @@ class DataFileIndexer implements Serializable {
 
     public String[] topicNames = new String[INIT_TOPIC_NUMBER];
     public ConcurrentHashMap<String, Integer> topicNameToNumber = new ConcurrentHashMap<>(INIT_TOPIC_NUMBER);
+
     public long[] topicOffsets = new long[INIT_TOPIC_NUMBER];
     public int[] topicMiniChunkNumber = new int[INIT_TOPIC_NUMBER];
-    public int[][] topicMiniChunkLengths = new int[INIT_TOPIC_NUMBER][];
+    public int[][] topicMiniChunkLengths;
 
     public long currentGlobalDataOffset = 0;
     public int currentTopicNumber = 0;
@@ -24,6 +25,7 @@ class DataFileIndexer implements Serializable {
 
     public DataFileIndexer() {
         topicNameToNumber.clear();
+        topicMiniChunkLengths = new int[INIT_TOPIC_NUMBER][];
         for (int i = 0; i < INIT_TOPIC_NUMBER; i++) {
             topicOffsets[i] = 0L;
             topicMiniChunkNumber[i] = 0;
@@ -31,7 +33,7 @@ class DataFileIndexer implements Serializable {
         }
     }
 
-    void assignNumberToTopic(String topicName) {
+    private void assignNumberToTopic(String topicName) {
         assignLock.lock();
         if (!topicNameToNumber.containsKey(topicName)) {
             topicNameToNumber.put(topicName, currentTopicNumber);

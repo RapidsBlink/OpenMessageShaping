@@ -1,15 +1,10 @@
 package io.openmessaging.demo;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -17,7 +12,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by will on 31/5/2017.
  */
 public class DataDumper {
-
     static String rootPath;
     static long DATA_FILE_SZIE = 8 * 1024 * 1024 * 1024; // 6GB
     static int MINI_CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
@@ -27,7 +21,6 @@ public class DataDumper {
     static FileChannel dataFileChannel;
     static DataFileIndexer dataFileIndexer = new DataFileIndexer();
 
-    static ByteBuffer integerToByteArray = ByteBuffer.allocate(4);
     static MappedByteBuffer[] topicMappedBuff = new MappedByteBuffer[dataFileIndexer.INIT_TOPIC_NUMBER];
 
     static ReentrantLock[] assignMiniChunkLocks = new ReentrantLock[dataFileIndexer.INIT_TOPIC_NUMBER];
@@ -35,14 +28,23 @@ public class DataDumper {
     static AtomicInteger numberOfProducer = new AtomicInteger(0);
     static AtomicInteger numberOfFinished = new AtomicInteger(0);
 
+    static boolean isInit = false;
+    static ReentrantLock initLock = new ReentrantLock();
+
     public DataDumper(String fileRootPath) throws IOException {
-        rootPath = fileRootPath;
-        dataFile = new RandomAccessFile(fileRootPath + File.separator + "data.bin", "rw");
-        dataFile.setLength(DATA_FILE_SZIE);
-        dataFileChannel = dataFile.getChannel();
-        for (int i = 0; i < dataFileIndexer.INIT_TOPIC_NUMBER; i++) {
-            topicMappedBuff[i] = null;
+        // shared by all threads
+        initLock.lock();
+        if (!isInit) {
+            rootPath = fileRootPath;
+            dataFile = new RandomAccessFile(fileRootPath + File.separator + "data.bin", "rw");
+            dataFile.setLength(DATA_FILE_SZIE);
+            dataFileChannel = dataFile.getChannel();
+            for (int i = 0; i < dataFileIndexer.INIT_TOPIC_NUMBER; i++) {
+                topicMappedBuff[i] = null;
+            }
         }
+        initLock.unlock();
+
         numberOfProducer.incrementAndGet();
     }
 
@@ -53,8 +55,10 @@ public class DataDumper {
 
         MappedByteBuffer buf = topicMappedBuff[topicNumber];
 
+        // length of byte arr
         buf.putInt(offset, data.length);
         offset += Integer.BYTES;
+        // byte arr
         for (int i = 0; i < data.length; i++) {
             buf.put(offset + i, data[i]);
         }
@@ -78,8 +82,8 @@ public class DataDumper {
 
     public void assignNextMiniChunk(int topicNumber) throws IOException {
         //assignMiniChunkLocks[topicNumber].lock();
-        int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
-        int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
+//        int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
+//        int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
 
         //if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < MINI_CHUNK_TAIL_SIZE) || topicMappedBuff[topicNumber] == null) {
         unmap(topicMappedBuff[topicNumber]);
