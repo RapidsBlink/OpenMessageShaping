@@ -133,7 +133,7 @@ public class DataDumper {
 
 class DataFileIndexer implements Serializable {
     public int INIT_TOPIC_NUMBER = 100;
-    public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = 10;
+    public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = 20;
     int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
 
     public int topicNumber = 0;
