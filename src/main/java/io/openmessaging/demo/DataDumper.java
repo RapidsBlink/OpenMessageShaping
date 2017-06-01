@@ -19,10 +19,13 @@ public class DataDumper {
     private static FileChannel dataFileChannel;
     private static DataFileIndexer dataFileIndexer = new DataFileIndexer();
     private static int MINI_CHUNK_SIZE = dataFileIndexer.MINI_CHUNK_SIZE;
+    private static int WASTE_SIZE = 256 * 1024;
 
     private static MappedByteBuffer[] topicMappedBuff = new MappedByteBuffer[dataFileIndexer.INIT_MAX_TOPIC_NUMBER];
 
     private static ReentrantLock[] topicWriteLocks = new ReentrantLock[dataFileIndexer.INIT_MAX_TOPIC_NUMBER];
+    private static AtomicInteger[] mmapedAreaUserNumArr = new AtomicInteger[dataFileIndexer.INIT_MAX_TOPIC_NUMBER];
+
     private static AtomicInteger numberOfProducer = new AtomicInteger(0);
     private static AtomicInteger numberOfFinished = new AtomicInteger(0);
 
@@ -39,6 +42,7 @@ public class DataDumper {
             for (int i = 0; i < dataFileIndexer.INIT_MAX_TOPIC_NUMBER; i++) {
                 topicMappedBuff[i] = null;
                 topicWriteLocks[i] = new ReentrantLock();
+                mmapedAreaUserNumArr[i] = new AtomicInteger(0);
             }
             isInit = true;
         }
@@ -61,6 +65,9 @@ public class DataDumper {
         for (int i = 0; i < data.length; i++) {
             buf.put(offset + i, data[i]);
         }
+
+        // record worker num in this ares
+        mmapedAreaUserNumArr[topicNumber].decrementAndGet();
     }
 
     private int getMessageWriteOffset(int topicNumber, int dataLength) throws IOException {
@@ -69,15 +76,20 @@ public class DataDumper {
         int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
 
         // create 4MB mini chunk, if almost full or not exists
-        if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < dataLength) || topicMappedBuff[topicNumber] == null) {
+        if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < WASTE_SIZE) || topicMappedBuff[topicNumber] == null) {
             assignNextMiniChunk(topicNumber);
         }
+
+        // record worker num in this ares
+        mmapedAreaUserNumArr[topicNumber].incrementAndGet();
+
         currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
         currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
         int offset = currentTopicMiniChunkLength;
         dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber] += dataLength;
 
         topicWriteLocks[topicNumber].unlock();
+
         return offset;
     }
 
@@ -85,7 +97,14 @@ public class DataDumper {
         if (topicMappedBuff[topicNumber] != null) {
             // sync: which is optional, async also keeps correctness
             topicMappedBuff[topicNumber].force();
-            unmap(topicMappedBuff[topicNumber]);
+
+            // need to make sure no other threads use this mapped area, busy waiting here
+            while (mmapedAreaUserNumArr[topicNumber].get() >= 0) {
+                if (mmapedAreaUserNumArr[topicNumber].get() == 0) {
+                    unmap(topicMappedBuff[topicNumber]);
+                    break;
+                }
+            }
         }
 
         // init 4MB mini chunk, set length 0
@@ -103,7 +122,7 @@ public class DataDumper {
             cleaner.setAccessible(true);
             Method clean = Class.forName("sun.misc.Cleaner").getMethod("clean");
             clean.invoke(cleaner.invoke(mbb));
-            //System.out.println("unmap successful");
+//            System.out.println("unmap successful");
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
