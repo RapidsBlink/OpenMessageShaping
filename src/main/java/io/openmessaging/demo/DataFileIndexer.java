@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DataFileIndexer implements Serializable {
     public int INIT_MAX_TOPIC_NUMBER = 100;
-    public int TOPIC_CHUNK_SIZE = 80 * 1024 * 1024; // 80 MB
+    public int TOPIC_CHUNK_SIZE = 100 * 1024 * 1024; // 100 MB
     // just for testing
     //public int TOPIC_CHUNK_SIZE = 500 * 1024 * 1024; // 400 MB
 

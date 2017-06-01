@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DataDumper {
     private static String rootPath;
-    private static long DATA_FILE_SIZE = 8L * 1024 * 1024 * 1024; // 8GB
+    private static long DATA_FILE_SIZE = 10L * 1024 * 1024 * 1024; // 8GB
 
     private static RandomAccessFile dataFile;
     private static FileChannel dataFileChannel;
