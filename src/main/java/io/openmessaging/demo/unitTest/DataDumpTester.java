@@ -19,18 +19,16 @@ class Worker extends Thread {
     DataDumper dd = new DataDumper("/tmp/test");
 
     public Worker() throws IOException {
-        topics.add("TOPIC0");
-        topics.add("TOPIC1");
-        topics.add("TOPIC2");
-        topics.add("TOPIC3");
-        topics.add("TOPIC4");
+        for(int i = 0 ; i < 70; i++){
+            topics.add("TOPIC" + i);
+        }
     }
 
     public void run() {
         Random rnd = new Random();
         for (int i = 0; i < 4000000; i++) {
             //String topic = topics.get(rnd.nextInt(5));
-            String topic = topics.get(i%5);
+            String topic = topics.get(i%70);
             int length = 100;
 //            if (i % 1000 == 0) {
 //                length = 256 * 1024;
@@ -67,19 +65,21 @@ public class DataDumpTester {
 
     public void dataDumpTestWithSingleThreadReader() throws IOException, ClassNotFoundException, InterruptedException {
         ArrayList<Thread> threads = new ArrayList<>();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             threads.add(new Worker());
         }
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             threads.get(i).start();
         }
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             try {
                 threads.get(i).join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+
+        LOGGER.info("DataDump Finished.");
 
         //MessageDeserialization
         DataReader dr = new DataReader("/tmp/test");
