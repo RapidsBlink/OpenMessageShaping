@@ -84,7 +84,7 @@ public class DataDumper {
     private void assignNextMiniChunk(int topicNumber) throws IOException {
         if (topicMappedBuff[topicNumber] != null) {
             // sync: which is optional, async also keeps correctness
-//            topicMappedBuff[topicNumber].force();
+            topicMappedBuff[topicNumber].force();
             unmap(topicMappedBuff[topicNumber]);
         }
 
