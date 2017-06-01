@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -20,7 +21,7 @@ import io.openmessaging.demo.DataFileIndexer;
 public class DataReader {
     private static Logger LOGGER = Logger.getLogger("InfoLogging");
 
-    static int BUFFEREN_NUMBER = 4;
+    static int BUFFEREN_NUMBER = 1;
     static int TOPIC_NUMBER = 100;
 
     static RandomAccessFile dataFile;
@@ -31,6 +32,8 @@ public class DataReader {
     static DataFileIndexer dataFileIndexer;
     static ArrayList<String> topicsReverseOrderInDataFile = new ArrayList<>();
     static ConcurrentHashMap<String, Integer> topicBuff = new ConcurrentHashMap<>();
+    public static HashMap<String, AtomicInteger> topicWaiterNumber = new HashMap<>();
+    public static ReentrantLock topicWaiterNumberLock = new ReentrantLock();
 
     static MappedByteBuffer[] bbuf = new MappedByteBuffer[BUFFEREN_NUMBER];
     static AtomicInteger[] bbufFinishedTimes = new AtomicInteger[BUFFEREN_NUMBER];
@@ -44,18 +47,24 @@ public class DataReader {
     static AtomicInteger currentChunkNum = new AtomicInteger();
 
 
-    public DataReader(String rootFilePath) throws IOException, ClassNotFoundException {
+    public DataReader(String rootFilePath){
         initLock.lock();
         if (!isInit) {
             isInit = true;
-            ObjectInputStream ois = new ObjectInputStream(
-                    new FileInputStream(rootFilePath + File.separator + "index.bin"));
-            dataFileIndexer = (DataFileIndexer) ois.readObject();
+            try {
+                ObjectInputStream ois = new ObjectInputStream(
+                        new FileInputStream(rootFilePath + File.separator + "index.bin"));
+                dataFileIndexer = (DataFileIndexer) ois.readObject();
 
-            currentChunkNum.set(dataFileIndexer.currentTopicNumber - 1);
+                currentChunkNum.set(dataFileIndexer.currentTopicNumber - 1);
 
-            dataFile = new RandomAccessFile(rootFilePath + File.separator + "data.bin", "rw");
-            dataFileChannel = dataFile.getChannel();
+                dataFile = new RandomAccessFile(rootFilePath + File.separator + "data.bin", "rw");
+                dataFileChannel = dataFile.getChannel();
+            }catch (IOException e){
+                e.printStackTrace();
+            }catch (ClassNotFoundException e){
+                e.printStackTrace();
+            }
 
             for(int i = 0 ; i < BUFFEREN_NUMBER; i++){
                 bbufFinishedTimes[i] = new AtomicInteger(0);
@@ -69,8 +78,13 @@ public class DataReader {
         int myRank = numberOfConsumer.getAndIncrement();
         if (myRank < BUFFEREN_NUMBER && currentChunkNum.get() >= 0) {
             int myTopicNumber = currentChunkNum.getAndDecrement();
-            bbuf[myRank] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
-                    dataFileIndexer.topicOffsets[myTopicNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
+            try {
+                bbuf[myRank] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
+                        dataFileIndexer.topicOffsets[myTopicNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+
             bbuf[myRank].load();
             bbufFinishedTimes[myRank].set(0);
             String topicName = dataFileIndexer.topicNames[myTopicNumber];
@@ -79,30 +93,41 @@ public class DataReader {
         }
     }
 
-    public MappedByteBuffer getBufferedTopic(String topicName) throws InterruptedException {
+    public MappedByteBuffer getBufferedTopic(String topicName) {
         while (!topicBuff.containsKey(topicName)) {
-            System.out.println(topicBuff.containsKey(topicName));
+            //System.out.println(topicBuff.containsKey(topicName));
+            try {
+                hasNewDataBlockLoaded.lock();
+                hasNewDataBlockLoadedCondition.await();
+            }catch (InterruptedException e){
+                e.printStackTrace();
+            }finally {
+                hasNewDataBlockLoaded.unlock();
+            }
 
-            hasNewDataBlockLoaded.lock();
-            hasNewDataBlockLoadedCondition.await();
-            hasNewDataBlockLoaded.unlock();
+
         }
         //here we can ensure data has been loaded
         return bbuf[topicBuff.get(topicName)];
     }
 
-    public void finishedTopic(String topicName) throws IOException {
+    public void finishedTopic(String topicName) {
         int topicBuffNum = topicBuff.get(topicName);
         int finished = bbufFinishedTimes[topicBuffNum].incrementAndGet();
         //the last one consumer on this topic
-        if (finished == numberOfConsumer.get()) {
+        if (finished == topicWaiterNumber.get(topicName).get()) {
             bbufFinishedTimes[topicBuffNum].set(0);
             //load next topic chunk
             DataDumper.unmap(bbuf[topicBuffNum]);
             int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
             if(globalTopicChunkNumber < 0) return;
-            bbuf[topicBuffNum] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
-                    dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
+            try {
+                bbuf[topicBuffNum] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
+                        dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+
             bbuf[topicBuffNum].load();
             bbufFinishedTimes[topicBuffNum].set(0);
             topicBuff.put(dataFileIndexer.topicNames[globalTopicChunkNumber], topicBuffNum);
