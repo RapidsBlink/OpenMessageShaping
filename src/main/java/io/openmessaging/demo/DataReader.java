@@ -1,8 +1,6 @@
 package io.openmessaging.demo;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -14,31 +12,27 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
-import io.openmessaging.demo.DataFileIndexer;
-
 /**
  * Created by will on 31/5/2017.
  */
 public class DataReader {
     private static Logger LOGGER = Logger.getLogger("InfoLogging");
 
-    static int BUFFEREN_NUMBER = 1;
-    static int TOPIC_NUMBER = 100;
+    static int BUFFER_NUMBER = 1;
 
     static RandomAccessFile dataFile;
     static FileChannel dataFileChannel;
 
     static AtomicInteger numberOfConsumer = new AtomicInteger(0);
-    static AtomicInteger numberOfFinishedConsumer = new AtomicInteger(0);
     static DataFileIndexer dataFileIndexer;
     static ArrayList<String> topicsReverseOrderInDataFile = new ArrayList<>();
     static ConcurrentHashMap<String, Integer> topicBuff = new ConcurrentHashMap<>();
     public static HashMap<String, AtomicInteger> topicWaiterNumber = new HashMap<>();
     public static ReentrantLock topicWaiterNumberLock = new ReentrantLock();
 
-    static MappedByteBuffer[] bbuf = new MappedByteBuffer[BUFFEREN_NUMBER];
-    static AtomicInteger[] bbufFinishedTimes = new AtomicInteger[BUFFEREN_NUMBER];
-    static ArrayList<DefaultBytesMessage>[] topicMessageList = new ArrayList[BUFFEREN_NUMBER];
+    private static MappedByteBuffer[] bbuf = new MappedByteBuffer[BUFFER_NUMBER];
+    private static AtomicInteger[] bbufFinishedTimes = new AtomicInteger[BUFFER_NUMBER];
+    private static ArrayList<DefaultBytesMessage>[] topicMessageList = new ArrayList[BUFFER_NUMBER];
 
     static ReentrantLock hasNewDataBlockLoaded = new ReentrantLock();
     static Condition hasNewDataBlockLoadedCondition = hasNewDataBlockLoaded.newCondition();
@@ -51,7 +45,7 @@ public class DataReader {
     static ByteBuffer messageBinary = ByteBuffer.allocate(260 * 1024);
     static MessageDeserialization messageDeserialization = new MessageDeserialization();
 
-    public DataReader(String rootFilePath){
+    public DataReader(String rootFilePath) {
         initLock.lock();
         if (!isInit) {
             isInit = true;
@@ -64,13 +58,13 @@ public class DataReader {
 
                 dataFile = new RandomAccessFile(rootFilePath + File.separator + "data.bin", "rw");
                 dataFileChannel = dataFile.getChannel();
-            }catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
-            }catch (ClassNotFoundException e){
+            } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
 
-            for(int i = 0 ; i < BUFFEREN_NUMBER; i++){
+            for (int i = 0; i < BUFFER_NUMBER; i++) {
                 bbufFinishedTimes[i] = new AtomicInteger(0);
             }
 
@@ -79,13 +73,14 @@ public class DataReader {
             }
         }
         initLock.unlock();
+
         int myRank = numberOfConsumer.getAndIncrement();
-        if (myRank < BUFFEREN_NUMBER && currentChunkNum.get() >= 0) {
+        if (myRank < BUFFER_NUMBER && currentChunkNum.get() >= 0) {
             int myTopicNumber = currentChunkNum.getAndDecrement();
             try {
                 bbuf[myRank] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
                         dataFileIndexer.topicOffsets[myTopicNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
-            }catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
@@ -99,8 +94,8 @@ public class DataReader {
         }
     }
 
-    private void transformMappedBufferToMessageList(int topicNumber){
-        if(topicMessageList[topicNumber] == null)
+    private void transformMappedBufferToMessageList(int topicNumber) {
+        if (topicMessageList[topicNumber] == null)
             topicMessageList[topicNumber] = new ArrayList<>();
         topicMessageList[topicNumber].clear();
 
@@ -130,25 +125,24 @@ public class DataReader {
             try {
                 hasNewDataBlockLoaded.lock();
                 hasNewDataBlockLoadedCondition.await();
-            }catch (InterruptedException e){
+            } catch (InterruptedException e) {
                 e.printStackTrace();
-            }finally {
+            } finally {
                 hasNewDataBlockLoaded.unlock();
             }
-
-
         }
         //here we can ensure data has been loaded
         return bbuf[topicBuff.get(topicName)];
     }
+
     public ArrayList<DefaultBytesMessage> getTopicArrayList(String topicName) {
         while (!topicBuff.containsKey(topicName)) {
             try {
                 hasNewDataBlockLoaded.lock();
                 hasNewDataBlockLoadedCondition.await();
-            }catch (InterruptedException e){
+            } catch (InterruptedException e) {
                 e.printStackTrace();
-            }finally {
+            } finally {
                 hasNewDataBlockLoaded.unlock();
             }
         }
@@ -164,11 +158,11 @@ public class DataReader {
             bbufFinishedTimes[topicBuffNum].set(0);
             //load next topic chunk
             int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
-            if(globalTopicChunkNumber < 0) return;
+            if (globalTopicChunkNumber < 0) return;
             try {
                 bbuf[topicBuffNum] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
                         dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
-            }catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
@@ -183,13 +177,12 @@ public class DataReader {
 
         }
     }
-    public ArrayList topicsReverseOrderInDataFile(){
+
+    public ArrayList topicsReverseOrderInDataFile() {
         return DataReader.topicsReverseOrderInDataFile;
     }
-    public DataFileIndexer getDataFileIndexer(){
-        return DataReader.dataFileIndexer;
-    }
-    public void close() {
 
+    public DataFileIndexer getDataFileIndexer() {
+        return DataReader.dataFileIndexer;
     }
 }

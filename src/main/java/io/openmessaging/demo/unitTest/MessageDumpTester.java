@@ -33,7 +33,7 @@ class MessageWorker extends Thread {
 
     public void run() {
         Random rnd = new Random();
-        for (int i = 0; i < 4000000; i++) {
+        for (int i = 0; i < 400000; i++) {
             //String topic = topics.get(rnd.nextInt(5));
             String topic = topics.get(i % 70);
             int length = 80;
@@ -130,7 +130,7 @@ public class MessageDumpTester {
         applog.addHandler( systemOut );
         applog.setLevel( Level.ALL );
 
-        new MessageDumpTester().multiThreadsWriter();
+        new MessageDumpTester().multiThreadsReader();
     }
     public void multiThreadsReader() throws IOException {
         long start = System.currentTimeMillis();

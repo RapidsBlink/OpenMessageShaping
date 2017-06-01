@@ -15,7 +15,7 @@ public class DefaultPullConsumer implements PullConsumer {
 
     private ArrayList<DefaultBytesMessage> currentTopic = null;
 
-    DataReader dr;
+    private DataReader dr;
 
     public DefaultPullConsumer(KeyValue properties) {
         this.properties = properties;
@@ -30,8 +30,8 @@ public class DefaultPullConsumer implements PullConsumer {
     @Override
     public Message poll() {
         System.out.println("Consumer poll.");
-        if(currentTopic == null || innerTopicIndex == currentTopic.size()){
-            if(localTopicIndex >= myNameList.size()){
+        if (currentTopic == null || innerTopicIndex == currentTopic.size()) {
+            if (localTopicIndex >= myNameList.size()) {
                 return null;
             }
             fetchNextTopicMessageList();
@@ -40,7 +40,7 @@ public class DefaultPullConsumer implements PullConsumer {
         return currentTopic.get(innerTopicIndex - 1);
     }
 
-    private void fetchNextTopicMessageList(){
+    private void fetchNextTopicMessageList() {
         innerTopicIndex = 0;
         currentTopic = dr.getTopicArrayList(myNameList.get(localTopicIndex));
         localTopicIndex++;

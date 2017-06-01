@@ -57,7 +57,7 @@ public class DefaultProducer implements Producer {
         }
 
         byteBuffer.clear();
-        messageSerialization.serialize((DefaultBytesMessage) message);
+        messageSerialization.serialize((DefaultBytesMessage) message, byteBuffer);
         byteBuffer.flip();
         try {
             dataDumper.writeToFile(topic != null ? topic : queue, byteBuffer);
