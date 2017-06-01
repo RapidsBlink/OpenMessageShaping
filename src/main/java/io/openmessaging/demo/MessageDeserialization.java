@@ -94,18 +94,18 @@ public class MessageDeserialization {
 
 //    // byteMessage only contains one byte[], and is ready for reading
 //    // i.e, already flip()
-//    public DefaultBytesMessage deserialize(ByteBuffer byteMessage) {
-//        messageByteBuffer.clear();
-//        messageByteBuffer.put(byteMessage);
-//
-//        messageByteBuffer.flip();
-//        byte[] body = getBytesFromByteBuffer(messageByteBuffer);
-//        byte[] headers = getBytesFromByteBuffer(messageByteBuffer);
-//        byte[] properties = getBytesFromByteBuffer(messageByteBuffer);
-//
-//        KeyValue headerKeyValue = deSerializeHashMap(headers);
-//        KeyValue propertyKeyValue = deSerializeHashMap(properties);
-//
-//        return new DefaultBytesMessage(body, headerKeyValue, propertyKeyValue);
-//    }
+    public DefaultBytesMessage deserialize(ByteBuffer byteMessage) {
+        messageByteBuffer.clear();
+        messageByteBuffer.put(byteMessage);
+
+        messageByteBuffer.flip();
+        byte[] body = getBytesFromByteBuffer(messageByteBuffer);
+        byte[] headers = getBytesFromByteBuffer(messageByteBuffer);
+        byte[] properties = getBytesFromByteBuffer(messageByteBuffer);
+
+        KeyValue headerKeyValue = deSerializeHashMap(headers);
+        KeyValue propertyKeyValue = deSerializeHashMap(properties);
+
+        return new DefaultBytesMessage(body, headerKeyValue, propertyKeyValue);
+    }
 }

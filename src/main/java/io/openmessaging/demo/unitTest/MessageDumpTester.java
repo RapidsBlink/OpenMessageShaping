@@ -96,28 +96,12 @@ class MessageReader extends Thread {
     }
     public void run() {
         for (String topic : myNameList) {
-            ArrayList<DefaultBytesMessage> contents = new ArrayList<>();
+            ArrayList<DefaultBytesMessage> contents;
             int topicNumber = dataFileIndexer.topicNameToNumber.get(topic);
             MappedByteBuffer buf = null;
 
-            buf = dr.getBufferedTopic(topic);
+            contents = dr.getTopicArrayList(topic);
 
-            for (int miniChunkNum = 0; miniChunkNum <= dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber]; miniChunkNum++) {
-                int currentOffset = 0;
-                int miniChunkOffset = dataFileIndexer.MINI_CHUNK_SIZE * miniChunkNum;
-                buf.position(miniChunkOffset);
-                while (true) {
-                    int dataLength = buf.getInt();
-                    byte[] data = new byte[dataLength];
-                    for (int idx = 0; idx < dataLength; idx++) {
-                        data[idx] = buf.get();
-                    }
-                    contents.add(messageDeserialization.deserialize(data));
-                    currentOffset += dataLength + Integer.BYTES;
-                    if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[topicNumber][miniChunkNum])
-                        break;
-                }
-            }
             int correct = 0;
             boolean OK = true;
             for (DefaultBytesMessage message : contents) {
