@@ -130,7 +130,7 @@ public class MessageDumpTester {
         applog.addHandler( systemOut );
         applog.setLevel( Level.ALL );
 
-        new MessageDumpTester().multiThreadsReader();
+        new MessageDumpTester().multiThreadsWriter();
     }
     public void multiThreadsReader() throws IOException {
         long start = System.currentTimeMillis();

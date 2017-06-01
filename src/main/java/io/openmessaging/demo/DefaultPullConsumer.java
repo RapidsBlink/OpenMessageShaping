@@ -9,10 +9,17 @@ import java.util.Collection;
 
 public class DefaultPullConsumer implements PullConsumer {
     private KeyValue properties;
-    private ArrayList<String> nameList;
+    private ArrayList<String> myNameList = new ArrayList<>();
+    private int localTopicIndex = 0;
+    private int innerTopicIndex = 0;
+
+    private ArrayList<DefaultBytesMessage> currentTopic = null;
+
+    DataReader dr;
 
     public DefaultPullConsumer(KeyValue properties) {
         this.properties = properties;
+        dr = new DataReader(properties.getString("STORE_PATH"));
     }
 
     @Override
@@ -22,8 +29,21 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override
     public Message poll() {
+        System.out.println("Consumer poll.");
+        if(currentTopic == null || innerTopicIndex == currentTopic.size()){
+            if(localTopicIndex >= myNameList.size()){
+                return null;
+            }
+            fetchNextTopicMessageList();
+        }
+        innerTopicIndex++;
+        return currentTopic.get(innerTopicIndex - 1);
+    }
 
-        return null;
+    private void fetchNextTopicMessageList(){
+        innerTopicIndex = 0;
+        currentTopic = dr.getTopicArrayList(myNameList.get(localTopicIndex));
+        localTopicIndex++;
     }
 
     @Override
@@ -43,15 +63,16 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override
     public void attachQueue(String queueName, Collection<String> topics) {
+        ArrayList<String> nameList = new ArrayList<>();
         nameList.addAll(topics);
         nameList.add(queueName);
+        ArrayList<String> dataFileOrderedTopics = dr.topicsReverseOrderInDataFile();
+        for (String topic : dataFileOrderedTopics) {
+            for (int i = 0; i < nameList.size(); i++) {
+                if (nameList.get(i).equals(topic))
+                    myNameList.add(topic);
+            }
+        }
     }
 
-    private boolean isNameInMyNameList(String name) {
-        for (String nameString : nameList) {
-            if (nameString.equals(name))
-                return true;
-        }
-        return false;
-    }
 }
