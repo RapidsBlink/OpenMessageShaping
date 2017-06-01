@@ -24,7 +24,7 @@ public class DataFileIndexer implements Serializable {
     public long[] topicOffsets = new long[INIT_MAX_TOPIC_NUMBER];
 
     // each 80MB, valid mini chunk number, used in consumption phase
-    public int[] topicMiniChunkNumber = new int[INIT_MAX_TOPIC_NUMBER];
+    public int[] topicMiniChunkCurrMaxIndex = new int[INIT_MAX_TOPIC_NUMBER];
     // each 4MB size, valid content, used in consumption phase
     public int[][] topicMiniChunkLengths;
 
@@ -39,7 +39,7 @@ public class DataFileIndexer implements Serializable {
         topicMiniChunkLengths = new int[INIT_MAX_TOPIC_NUMBER][];
         for (int i = 0; i < INIT_MAX_TOPIC_NUMBER; i++) {
             topicOffsets[i] = 0L;
-            topicMiniChunkNumber[i] = 0;
+            topicMiniChunkCurrMaxIndex[i] = -1;
             topicMiniChunkLengths[i] = new int[MAX_MINI_CHUNK_NUMBER_PER_TOPIC];
         }
     }

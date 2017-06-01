@@ -72,18 +72,20 @@ public class DataDumper {
 
     private int getMessageWriteOffset(int topicNumber, int dataLength) throws IOException {
         topicWriteLocks[topicNumber].lock();
-        int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
+        int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
+        if(currentTopicMiniChunkNumber < 0 ){
+            currentTopicMiniChunkNumber = assignNextMiniChunk(topicNumber);
+        }
         int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
 
         // create 4MB mini chunk, if almost full or not exists
         if ((MINI_CHUNK_SIZE - currentTopicMiniChunkLength < WASTE_SIZE) || topicMappedBuff[topicNumber] == null) {
-            assignNextMiniChunk(topicNumber);
+            currentTopicMiniChunkNumber = assignNextMiniChunk(topicNumber);
         }
 
         // record worker num in this ares
         mmapedAreaUserNumArr[topicNumber].incrementAndGet();
 
-        currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkNumber[topicNumber];
         currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
         int offset = currentTopicMiniChunkLength;
         dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber] += dataLength;
@@ -93,7 +95,7 @@ public class DataDumper {
         return offset;
     }
 
-    private void assignNextMiniChunk(int topicNumber) throws IOException {
+    private int assignNextMiniChunk(int topicNumber) throws IOException {
         if (topicMappedBuff[topicNumber] != null) {
             // sync: which is optional, async also keeps correctness
             topicMappedBuff[topicNumber].force();
@@ -106,14 +108,15 @@ public class DataDumper {
                 }
             }
         }
-
+        dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber]++;
+        int currentMiniChunkNum = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
         // init 4MB mini chunk, set length 0
-        dataFileIndexer.topicMiniChunkLengths[topicNumber][dataFileIndexer.topicMiniChunkNumber[topicNumber]] = 0;
-
-        long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkNumber[topicNumber];
+        dataFileIndexer.topicMiniChunkLengths[topicNumber][currentMiniChunkNum] = 0;
+        long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
         topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
 
-        dataFileIndexer.topicMiniChunkNumber[topicNumber]++;
+        return currentMiniChunkNum;
+
     }
 
     static void unmap(MappedByteBuffer mbb) {
