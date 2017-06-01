@@ -3,12 +3,14 @@ package io.openmessaging.demo;
 import io.openmessaging.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private KeyValue properties;
 
     private MessageSerialization messageSerialization = new MessageSerialization();
+    private ByteBuffer byteBuffer = ByteBuffer.allocate(260 * 1024);
     private DataDumper dataDumper = null;
 
     public DefaultProducer(KeyValue properties) {
@@ -53,9 +55,12 @@ public class DefaultProducer implements Producer {
         if ((topic == null && queue == null) || (topic != null && queue != null)) {
             throw new ClientOMSException(String.format("Queue:%s Topic:%s should put one and only one", true, queue));
         }
-        byte[] bytes = messageSerialization.serialize((DefaultBytesMessage) message);
+
+        byteBuffer.clear();
+        messageSerialization.serialize((DefaultBytesMessage) message);
+        byteBuffer.flip();
         try {
-            dataDumper.writeToFile(topic != null ? topic : queue, bytes);
+            dataDumper.writeToFile(topic != null ? topic : queue, byteBuffer);
         } catch (IOException e) {
             e.printStackTrace();
         }

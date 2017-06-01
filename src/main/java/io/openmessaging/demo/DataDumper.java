@@ -3,6 +3,7 @@ package io.openmessaging.demo;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,10 +71,30 @@ public class DataDumper {
         mmapedAreaUserNumArr[topicNumber].decrementAndGet();
     }
 
+    public void writeToFile(String topicName, ByteBuffer data) throws IOException {
+        int topicNumber = dataFileIndexer.getAssignedTopicNumber(topicName);
+
+        int offset = getMessageWriteOffset(topicNumber, data.limit() + Integer.BYTES);
+
+        MappedByteBuffer buf = topicMappedBuff[topicNumber];
+
+        // 1st: length of byte arr
+        buf.putInt(offset, data.limit());
+        offset += Integer.BYTES;
+        // 2nd: byte arr
+        for (int i = 0; i < data.limit(); i++) {
+            buf.put(offset + i, data.get(i));
+        }
+
+        // record worker num in this ares
+        mmapedAreaUserNumArr[topicNumber].decrementAndGet();
+    }
+
+
     private int getMessageWriteOffset(int topicNumber, int dataLength) throws IOException {
         topicWriteLocks[topicNumber].lock();
         int currentTopicMiniChunkNumber = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
-        if(currentTopicMiniChunkNumber < 0 ){
+        if (currentTopicMiniChunkNumber < 0) {
             currentTopicMiniChunkNumber = assignNextMiniChunk(topicNumber);
         }
         int currentTopicMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkNumber];
