@@ -6,8 +6,11 @@ import io.openmessaging.PullConsumer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 public class DefaultPullConsumer implements PullConsumer {
+    //private static Logger LOGGER = Logger.getLogger("InfoLogging");
+
     private KeyValue properties;
     private ArrayList<String> myNameList = new ArrayList<>();
     private int localTopicIndex = 0;
@@ -32,12 +35,15 @@ public class DefaultPullConsumer implements PullConsumer {
         //System.out.println("Consumer poll.");
         if (currentTopic == null || innerTopicIndex == currentTopic.size()) {
             if (localTopicIndex >= myNameList.size()) {
+                dr.finishedTopic(myNameList.get(localTopicIndex - 1));
                 return null;
             }
             if(currentTopic != null){
                 dr.finishedTopic(myNameList.get(localTopicIndex - 1));
             }
             fetchNextTopicMessageList();
+            //LOGGER.info("fetched topic: " + myNameList.get(localTopicIndex - 1));
+
         }
         innerTopicIndex++;
         return currentTopic.get(innerTopicIndex - 1);

@@ -10,13 +10,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
  * Created by will on 31/5/2017.
  */
 public class DataReader {
-    private static Logger LOGGER = Logger.getLogger("InfoLogging");
+    //private static Logger LOGGER = Logger.getLogger("InfoLogging");
 
     static int BUFFER_NUMBER = 1;
 
@@ -26,6 +27,8 @@ public class DataReader {
     static AtomicInteger numberOfConsumer = new AtomicInteger(0);
     static DataFileIndexer dataFileIndexer;
     static ArrayList<String> topicsReverseOrderInDataFile = new ArrayList<>();
+
+    //static ReentrantReadWriteLock topicBuffRWLock = new ReentrantReadWriteLock();
     static ConcurrentHashMap<String, Integer> topicBuff = new ConcurrentHashMap<>();
     public static HashMap<String, AtomicInteger> topicWaiterNumber = new HashMap<>();
     public static ReentrantLock topicWaiterNumberLock = new ReentrantLock();
@@ -78,7 +81,7 @@ public class DataReader {
         initLock.unlock();
 
         int myRank = numberOfConsumer.getAndIncrement();
-        System.out.println("Number of Consumer: " + (myRank+1));
+        System.out.println("Number of Consumer: " + (myRank + 1));
     }
 
     private void transformMappedBufferToMessageList(int topicBuffNumber, int globalTopicChunkNumber) {
@@ -108,7 +111,10 @@ public class DataReader {
 
     public MappedByteBuffer getBufferedTopic(String topicName) {
         //LOGGER.info("Fetching " + topicName);
-        while (!topicBuff.containsKey(topicName)) {
+        //topicBuffRWLock.readLock().lock();
+        boolean hasLoadedTopic = topicBuff.containsKey(topicName);
+        //topicBuffRWLock.readLock().unlock();
+        while (!hasLoadedTopic) {
             //System.out.println(topicBuff.containsKey(topicName));
             try {
                 hasNewDataBlockLoaded.lock();
@@ -120,63 +126,82 @@ public class DataReader {
             }
         }
         //here we can ensure data has been loaded
-        return bbuf[topicBuff.get(topicName)];
+        //topicBuffRWLock.readLock().lock();
+        int topicBuffIndex = topicBuff.get(topicName);
+        //topicBuffRWLock.readLock().unlock();
+        return bbuf[topicBuffIndex];
     }
 
     public ArrayList<DefaultBytesMessage> getTopicArrayList(String topicName) {
-        LOGGER.info("Fetching " + topicName);
-        while (!topicBuff.containsKey(topicName)) {
-            LOGGER.info("NOT FOUND: " + topicName);
-            try {
-                hasNewDataBlockLoaded.lock();
+        //LOGGER.info("Fetching " + topicName);
+        //topicBuffRWLock.readLock().lock();
+        boolean hasLoadedTopic = topicBuff.containsKey(topicName);
+        //topicBuffRWLock.readLock().unlock();
+        hasNewDataBlockLoaded.lock();
+        try {
+            while (!hasLoadedTopic) {
+                //LOGGER.info("NOT FOUND: " + topicName);
+
                 hasNewDataBlockLoadedCondition.await();
-                LOGGER.info("Awake, check topic: " + topicName);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                hasNewDataBlockLoaded.unlock();
+                //LOGGER.info("Awake, check topic: " + topicName);
+
+                //topicBuffRWLock.readLock().lock();
+                hasLoadedTopic = topicBuff.containsKey(topicName);
+                //LOGGER.info("has loadedTopic " + hasLoadedTopic);
+                //topicBuffRWLock.readLock().unlock();
             }
+            //LOGGER.info("Exit While...");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            //LOGGER.info("unlock hasNewDataBlockLoaded Lock..");
+            hasNewDataBlockLoaded.unlock();
         }
+
         //here we can ensure data has been loaded
-        return topicMessageList[topicBuff.get(topicName)];
+        //topicBuffRWLock.readLock().lock();
+        int topicBuffIndex = topicBuff.get(topicName);
+        //LOGGER.info(topicName + " topicBuffIndex " + topicBuffIndex);
+        //topicBuffRWLock.readLock().unlock();
+        return topicMessageList[topicBuffIndex];
     }
 
-    public void countTopicListenerNumber(ArrayList<String> nameList){
-        for(String topic:nameList){
+    public void countTopicListenerNumber(ArrayList<String> nameList) {
+        for (String topic : nameList) {
             topicWaiterNumberLock.lock();
-            if(!topicWaiterNumber.containsKey(topic)){
+            if (!topicWaiterNumber.containsKey(topic)) {
                 topicWaiterNumber.put(topic, new AtomicInteger(0));
             }
             topicWaiterNumber.get(topic).incrementAndGet();
             topicWaiterNumberLock.unlock();
         }
         int myRank = consumerFinishedAttached.decrementAndGet();
-        if(myRank == 0){
+        if (myRank == 0) {
             String firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.get()];
-            while(!topicWaiterNumber.containsKey(firstLoadTopicChunk) || topicWaiterNumber.get(firstLoadTopicChunk).get() == 0){
+            while (!topicWaiterNumber.containsKey(firstLoadTopicChunk) || topicWaiterNumber.get(firstLoadTopicChunk).get() == 0) {
                 firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.getAndDecrement()];
             }
             loadOneTopicChunk(0);
         }
     }
 
-    private void loadOneTopicChunk(int topicBuffNumber){
+    private void loadOneTopicChunk(int topicBuffNumber) {
         //load next topic chunk
-        if(currentChunkNum.get() < 0){
-            LOGGER.info("All chunk finished. exit loader..");
-            return;
-        }
-        LOGGER.info("load " + dataFileIndexer.topicNames[currentChunkNum.get()]);
+//        if (currentChunkNum.get() < 0) {
+//            LOGGER.info("All chunk finished. exit loader..");
+//            return;
+//        }
+        //LOGGER.info("load " + dataFileIndexer.topicNames[currentChunkNum.get()]);
         int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
         if (globalTopicChunkNumber < 0) return;
-        while(topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]) == null ||
-                topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]).get() == 0){
+        while (topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]) == null ||
+                topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]).get() == 0) {
             globalTopicChunkNumber = currentChunkNum.getAndDecrement();
             if (globalTopicChunkNumber < 0) return;
         }
 
         try {
-            bbuf[topicBuffNumber] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
+            bbuf[topicBuffNumber] = dataFileChannel.map(FileChannel.MapMode.PRIVATE,
                     dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
         } catch (IOException e) {
             e.printStackTrace();
@@ -186,7 +211,9 @@ public class DataReader {
         transformMappedBufferToMessageList(topicBuffNumber, globalTopicChunkNumber);
         DataDumper.unmap(bbuf[topicBuffNumber]);
         bbufFinishedTimes[topicBuffNumber].set(0);
+        //topicBuffRWLock.writeLock().lock();
         topicBuff.put(dataFileIndexer.topicNames[globalTopicChunkNumber], topicBuffNumber);
+        //topicBuffRWLock.writeLock().unlock();
         hasNewDataBlockLoaded.lock();
         hasNewDataBlockLoadedCondition.signalAll();
         hasNewDataBlockLoaded.unlock();
@@ -199,7 +226,7 @@ public class DataReader {
         //int finished = bbufFinishedTimes[topicBuffNum].incrementAndGet();
         //the last one consumer on this topic
         if (finished == 0) {
-            LOGGER.info("finished " + topicName);
+            //LOGGER.info("finished " + topicName);
             //DataDumper.unmap(bbuf[topicBuffNum]);
             loadOneTopicChunk(topicBuffNum);
         }
