@@ -1,6 +1,12 @@
 package io.openmessaging.demo;
 
+import io.openmessaging.Message;
+import io.openmessaging.Producer;
+import io.openmessaging.PullConsumer;
+
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -16,173 +22,129 @@ import java.util.logging.Logger;
  * Created by will on 31/5/2017.
  */
 public class DataReader {
-    private static Logger LOGGER = Logger.getLogger("InfoLogging");
+    private static int CHUNK_SIZE = 128 * 1024 * 1024;
+    private static boolean isInit = false;
+    private static ReentrantLock initLock = new ReentrantLock();
+    private static RandomAccessFile dataFile;
+    private static PullConsumer initConsumer = null;
 
-    static int BUFFER_NUMBER = 1;
+    private static FileChannel dataFileChannel;
+    private static ArrayList<Integer> mmapChunkLengthList;
+    private static ArrayList<DefaultBytesMessage> defaultBytesMessageArrayList = new ArrayList<>();
 
-    static RandomAccessFile dataFile;
-    static FileChannel dataFileChannel;
+    int nextChunkIndex = 0;
+    private boolean isEnd = false;
 
-    static AtomicInteger numberOfConsumer = new AtomicInteger(0);
-    static DataFileIndexer dataFileIndexer;
-    static ArrayList<String> topicsReverseOrderInDataFile = new ArrayList<>();
-    static ConcurrentHashMap<String, Integer> topicBuff = new ConcurrentHashMap<>();
-    public static HashMap<String, AtomicInteger> topicWaiterNumber = new HashMap<>();
-    public static ReentrantLock topicWaiterNumberLock = new ReentrantLock();
+    private static AtomicInteger numberOfConsumer = new AtomicInteger(0);
+    private static AtomicInteger numberOfActiveConsumer = new AtomicInteger(0);
 
-    private static MappedByteBuffer[] bbuf = new MappedByteBuffer[BUFFER_NUMBER];
-    private static AtomicInteger[] bbufFinishedTimes = new AtomicInteger[BUFFER_NUMBER];
-    private static ArrayList<DefaultBytesMessage>[] topicMessageList = new ArrayList[BUFFER_NUMBER];
+    private static ByteBuffer messageBinary = ByteBuffer.allocate(260 * 1024);
+    private static MessageDeserialization messageDeserialization = new MessageDeserialization();
 
-    static ReentrantLock hasNewDataBlockLoaded = new ReentrantLock();
-    static Condition hasNewDataBlockLoadedCondition = hasNewDataBlockLoaded.newCondition();
+    private static boolean isReady = false;
+    private static ReentrantLock isReadyUpdate = new ReentrantLock();
+    private static ReentrantLock isBulkSyncDataReadyLock = new ReentrantLock();
+    private static Condition isBulkSyncDataReadyCond = isBulkSyncDataReadyLock.newCondition();
 
-    static boolean isInit = false;
-    static ReentrantLock initLock = new ReentrantLock();
-
-    static AtomicInteger currentChunkNum = new AtomicInteger();
-
-    static ByteBuffer messageBinary = ByteBuffer.allocate(260 * 1024);
-    static MessageDeserialization messageDeserialization = new MessageDeserialization();
-
-    public DataReader(String rootFilePath) {
+    public DataReader(String fileRootPath, PullConsumer pullConsumer) {
         initLock.lock();
         if (!isInit) {
+            initConsumer = pullConsumer;
             isInit = true;
-            try {
-                ObjectInputStream ois = new ObjectInputStream(
-                        new FileInputStream(rootFilePath + File.separator + "index.bin"));
-                dataFileIndexer = (DataFileIndexer) ois.readObject();
-
-                currentChunkNum.set(dataFileIndexer.currentTopicNumber - 1);
-
-                dataFile = new RandomAccessFile(rootFilePath + File.separator + "data.bin", "rw");
-                dataFileChannel = dataFile.getChannel();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-
-            for (int i = 0; i < BUFFER_NUMBER; i++) {
-                bbufFinishedTimes[i] = new AtomicInteger(0);
-            }
-
-            for (int i = dataFileIndexer.currentTopicNumber - 1; i >= 0; i--) {
-                topicsReverseOrderInDataFile.add(dataFileIndexer.topicNames[i]);
-            }
         }
         initLock.unlock();
 
-        int myRank = numberOfConsumer.getAndIncrement();
-        if (myRank < BUFFER_NUMBER && currentChunkNum.get() >= 0) {
-            int myTopicNumber = currentChunkNum.getAndDecrement();
+        if (pullConsumer == initConsumer) {
             try {
-                bbuf[myRank] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
-                        dataFileIndexer.topicOffsets[myTopicNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
-            } catch (IOException e) {
+                dataFile = new RandomAccessFile(fileRootPath + File.separator + "data.bin", "rw");
+                dataFileChannel = dataFile.getChannel();
+                ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileRootPath + File.separator + "index.bin")));
+                mmapChunkLengthList = ((DataIndexer) ois.readObject()).mmapChunkLengthList;
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
-
-            bbuf[myRank].load();
-            transformMappedBufferToMessageList(myRank);
-            DataDumper.unmap(bbuf[myRank]);
-            bbufFinishedTimes[myRank].set(0);
-            String topicName = dataFileIndexer.topicNames[myTopicNumber];
-            LOGGER.info(topicName);
-            topicBuff.put(topicName, myRank);
+        } else {
+            numberOfConsumer.incrementAndGet();
         }
     }
 
-    private void transformMappedBufferToMessageList(int topicNumber) {
-        if (topicMessageList[topicNumber] == null)
-            topicMessageList[topicNumber] = new ArrayList<>();
-        topicMessageList[topicNumber].clear();
+    public boolean isEnd() {
+        return isEnd;
+    }
 
-        MappedByteBuffer buf = bbuf[topicNumber];
-        for (int miniChunkNum = 0; miniChunkNum <= dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber]; miniChunkNum++) {
-            int currentOffset = 0;
-            int miniChunkOffset = dataFileIndexer.MINI_CHUNK_SIZE * miniChunkNum;
-            buf.position(miniChunkOffset);
-            while (true) {
-                int dataLength = buf.getInt();
+    private void waitForMessageList() {
+        isBulkSyncDataReadyLock.lock();
+        while (!isReady) {
+            try {
+                isBulkSyncDataReadyCond.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        isBulkSyncDataReadyLock.unlock();
+    }
+
+    private void updateMessageList() {
+        defaultBytesMessageArrayList.clear();
+        try {
+            MappedByteBuffer mappedByteBuffer = dataFileChannel.map(FileChannel.MapMode.READ_ONLY, CHUNK_SIZE * nextChunkIndex, mmapChunkLengthList.get(nextChunkIndex));
+            mappedByteBuffer.load();
+            while (mappedByteBuffer.hasRemaining()) {
+                int dataLength = mappedByteBuffer.getInt();
                 messageBinary.clear();
                 for (int idx = 0; idx < dataLength; idx++) {
-                    messageBinary.put(buf.get());
+                    messageBinary.put(mappedByteBuffer.get());
                 }
                 messageBinary.flip();
-                topicMessageList[topicNumber].add(messageDeserialization.deserialize(messageBinary));
-                currentOffset += dataLength + Integer.BYTES;
-                if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[topicNumber][miniChunkNum])
-                    break;
-            }
-        }
-    }
-
-    public MappedByteBuffer getBufferedTopic(String topicName) {
-        while (!topicBuff.containsKey(topicName)) {
-            //System.out.println(topicBuff.containsKey(topicName));
-            try {
-                hasNewDataBlockLoaded.lock();
-                hasNewDataBlockLoadedCondition.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                hasNewDataBlockLoaded.unlock();
-            }
-        }
-        //here we can ensure data has been loaded
-        return bbuf[topicBuff.get(topicName)];
-    }
-
-    public ArrayList<DefaultBytesMessage> getTopicArrayList(String topicName) {
-        while (!topicBuff.containsKey(topicName)) {
-            try {
-                hasNewDataBlockLoaded.lock();
-                hasNewDataBlockLoadedCondition.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                hasNewDataBlockLoaded.unlock();
-            }
-        }
-        //here we can ensure data has been loaded
-        return topicMessageList[topicBuff.get(topicName)];
-    }
-
-    public void finishedTopic(String topicName) {
-        int topicBuffNum = topicBuff.get(topicName);
-        int finished = bbufFinishedTimes[topicBuffNum].incrementAndGet();
-        //the last one consumer on this topic
-        if (finished == topicWaiterNumber.get(topicName).get()) {
-            bbufFinishedTimes[topicBuffNum].set(0);
-            //load next topic chunk
-            int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
-            if (globalTopicChunkNumber < 0) return;
-            try {
-                bbuf[topicBuffNum] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
-                        dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
-            } catch (IOException e) {
-                e.printStackTrace();
+                defaultBytesMessageArrayList.add(messageDeserialization.deserialize(messageBinary));
             }
 
-            bbuf[topicBuffNum].load();
-            transformMappedBufferToMessageList(topicBuffNum);
-            DataDumper.unmap(bbuf[topicBuffNum]);
-            bbufFinishedTimes[topicBuffNum].set(0);
-            topicBuff.put(dataFileIndexer.topicNames[globalTopicChunkNumber], topicBuffNum);
-            hasNewDataBlockLoaded.lock();
-            hasNewDataBlockLoadedCondition.signalAll();
-            hasNewDataBlockLoaded.unlock();
+            unmap(mappedByteBuffer);
 
+            // busy waiting
+            while (numberOfActiveConsumer.get() > 0) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            isBulkSyncDataReadyLock.lock();
+            isBulkSyncDataReadyCond.signalAll();
+            isBulkSyncDataReadyLock.unlock();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        nextChunkIndex++;
     }
 
-    public ArrayList topicsReverseOrderInDataFile() {
-        return DataReader.topicsReverseOrderInDataFile;
+    ArrayList<DefaultBytesMessage> requestNextChunkMessage(PullConsumer pullConsumer) {
+        if (nextChunkIndex >= mmapChunkLengthList.size()) {
+            isEnd = true;
+            return null;
+        } else {
+            if (pullConsumer != initConsumer) {
+                numberOfActiveConsumer.decrementAndGet();
+                waitForMessageList();
+                numberOfActiveConsumer.incrementAndGet();
+            } else {
+                // the thread to do most work
+                updateMessageList();
+            }
+        }
+        return defaultBytesMessageArrayList;
     }
 
-    public DataFileIndexer getDataFileIndexer() {
-        return DataReader.dataFileIndexer;
+
+    private static void unmap(MappedByteBuffer mbb) {
+        try {
+            Method cleaner = mbb.getClass().getMethod("cleaner");
+            cleaner.setAccessible(true);
+            Method clean = Class.forName("sun.misc.Cleaner").getMethod("clean");
+            clean.invoke(cleaner.invoke(mbb));
+        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
     }
 }

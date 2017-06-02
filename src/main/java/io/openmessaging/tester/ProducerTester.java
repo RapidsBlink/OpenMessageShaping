@@ -75,10 +75,7 @@ public class ProducerTester {
                     break;
                 }
             }
-            producer.flush();
         }
-
-
     }
 
     public static void main(String[] args) throws Exception {
