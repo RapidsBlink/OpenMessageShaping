@@ -1,22 +1,17 @@
 package io.openmessaging.demo;
 
-import io.openmessaging.Message;
-import io.openmessaging.Producer;
 import io.openmessaging.PullConsumer;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Logger;
+
+import static io.openmessaging.demo.FileUtils.unmap;
 
 /**
  * Created by will on 31/5/2017.
@@ -91,6 +86,10 @@ public class DataReader {
             mappedByteBuffer.load();
             while (mappedByteBuffer.hasRemaining()) {
                 int dataLength = mappedByteBuffer.getInt();
+                System.out.println(dataLength);
+                if (dataLength == 0) {
+                    System.out.println("fuck");
+                }
                 messageBinary.clear();
                 for (int idx = 0; idx < dataLength; idx++) {
                     messageBinary.put(mappedByteBuffer.get());
@@ -134,17 +133,5 @@ public class DataReader {
             }
         }
         return defaultBytesMessageArrayList;
-    }
-
-
-    private static void unmap(MappedByteBuffer mbb) {
-        try {
-            Method cleaner = mbb.getClass().getMethod("cleaner");
-            cleaner.setAccessible(true);
-            Method clean = Class.forName("sun.misc.Cleaner").getMethod("clean");
-            clean.invoke(cleaner.invoke(mbb));
-        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-        }
     }
 }

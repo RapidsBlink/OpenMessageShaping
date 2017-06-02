@@ -1,20 +1,21 @@
 package io.openmessaging.demo;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.openmessaging.demo.FileUtils.CHUNK_SIZE;
+import static io.openmessaging.demo.FileUtils.MAX_FILE_SIZE;
+import static io.openmessaging.demo.FileUtils.unmap;
+
+
 /**
  * Created by will on 31/5/2017.
  */
 public class DataDumper {
-    private static int CHUNK_SIZE = 128 * 1024 * 1024;
-
     private static boolean isInit = false;
     private static ReentrantLock initLock = new ReentrantLock();
     private static RandomAccessFile dataFile;
@@ -42,8 +43,7 @@ public class DataDumper {
         initLock.lock();
         if (!isInit) {
             dataFile = new RandomAccessFile(fileRootPath + File.separator + "data.bin", "rw");
-            long maxDataFileSize = 10L * 1024 * 1024 * 1024;
-            dataFile.setLength(maxDataFileSize);
+            dataFile.setLength(MAX_FILE_SIZE);
             dataFileChannel = dataFile.getChannel();
             outputStream = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileRootPath + File.separator + "index.bin")));
             isInit = true;
@@ -57,7 +57,11 @@ public class DataDumper {
         int offset = getInChunkOffset(data.limit() + Integer.BYTES);
 
         // 1st: length of byte arr
+        dataIndexer.messageBytesLengthList.add(data.limit());
         mappedByteBuffer.putInt(offset, data.limit());
+        if (data.limit() == 0) {
+            System.out.println("shit");
+        }
         offset += Integer.BYTES;
         // 2nd: byte arr
         for (int i = 0; i < data.limit(); i++) {
@@ -74,12 +78,13 @@ public class DataDumper {
             // need to make sure no other threads use this mapped area, busy waiting here
             while (mapAreaUserNum.get() >= 0) {
                 if (mapAreaUserNum.get() == 0) {
+                    mappedByteBuffer.force();
                     unmap(mappedByteBuffer);
                     break;
                 }
             }
         }
-        mappedByteBuffer = dataFileChannel.map(FileChannel.MapMode.PRIVATE, (long) nextChunkIdx * CHUNK_SIZE, CHUNK_SIZE);
+        mappedByteBuffer = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, (long) nextChunkIdx * CHUNK_SIZE, CHUNK_SIZE);
         nextChunkIdx += 1;
     }
 
@@ -104,16 +109,6 @@ public class DataDumper {
         return nextInChunkOffset;
     }
 
-    private static void unmap(MappedByteBuffer mbb) {
-        try {
-            Method cleaner = mbb.getClass().getMethod("cleaner");
-            cleaner.setAccessible(true);
-            Method clean = Class.forName("sun.misc.Cleaner").getMethod("clean");
-            clean.invoke(cleaner.invoke(mbb));
-        } catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-        }
-    }
 
     void close() throws IOException {
         closeLock.lock();
@@ -125,6 +120,10 @@ public class DataDumper {
             System.out.println("nextInChunkOffset:" + nextInChunkOffset);
             long fileSize = (long) (nextChunkIdx - 1) * CHUNK_SIZE + nextInChunkOffset;
             System.out.println("fileLen:" + fileSize);
+            if (mappedByteBuffer != null) {
+                mappedByteBuffer.force();
+                unmap(mappedByteBuffer);
+            }
             dataFile.setLength(fileSize);
             dataFile.close();
 
