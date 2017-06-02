@@ -29,10 +29,13 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override
     public Message poll() {
-        System.out.println("Consumer poll.");
+        //System.out.println("Consumer poll.");
         if (currentTopic == null || innerTopicIndex == currentTopic.size()) {
             if (localTopicIndex >= myNameList.size()) {
                 return null;
+            }
+            if(currentTopic != null){
+                dr.finishedTopic(myNameList.get(localTopicIndex - 1));
             }
             fetchNextTopicMessageList();
         }
@@ -44,6 +47,7 @@ public class DefaultPullConsumer implements PullConsumer {
         innerTopicIndex = 0;
         currentTopic = dr.getTopicArrayList(myNameList.get(localTopicIndex));
         localTopicIndex++;
+
     }
 
     @Override
@@ -73,6 +77,7 @@ public class DefaultPullConsumer implements PullConsumer {
                     myNameList.add(topic);
             }
         }
+        dr.countTopicListenerNumber(myNameList);
     }
 
 }

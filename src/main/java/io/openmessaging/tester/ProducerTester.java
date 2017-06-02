@@ -75,7 +75,6 @@ public class ProducerTester {
                     break;
                 }
             }
-            producer.flush();
         }
 
 

@@ -54,12 +54,11 @@ public class DataDumper {
         numberOfProducer.incrementAndGet();
     }
 
-    public void writeToFile(String topicName, byte[] data) throws IOException {
+    public void writeToFile(String topicName, byte[] data, int length) throws IOException {
 
         int topicNumber = dataFileIndexer.getAssignedTopicNumber(topicName);
 
-
-        int offset = getMessageWriteOffset(topicNumber, data.length + Integer.BYTES);
+        int offset = getMessageWriteOffset(topicNumber, length + Integer.BYTES);
         int currentTopicMiniChunkIndex = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
 
         MappedByteBuffer buf = topicMappedBuff[topicNumber];
@@ -67,10 +66,10 @@ public class DataDumper {
         //System.out.println(offset + " topic: " + dataFileIndexer.topicNames[topicNumber] + " MiniChunkIndex:" + currentTopicMiniChunkIndex);
 
         // 1st: length of byte arr
-        buf.putInt(offset, data.length);
+        buf.putInt(offset, length);
         offset += Integer.BYTES;
         // 2nd: byte arr
-        for (int i = 0; i < data.length; i++) {
+        for (int i = 0; i < length; i++) {
             buf.put(offset + i, data[i]);
         }
 
@@ -84,22 +83,8 @@ public class DataDumper {
     }
 
     public void writeToFile(String topicName, ByteBuffer data) throws IOException {
-        int topicNumber = dataFileIndexer.getAssignedTopicNumber(topicName);
-
-        int offset = getMessageWriteOffset(topicNumber, data.limit() + Integer.BYTES);
-
-        MappedByteBuffer buf = topicMappedBuff[topicNumber];
-
-        // 1st: length of byte arr
-        buf.putInt(offset, data.limit());
-        offset += Integer.BYTES;
-        // 2nd: byte arr
-        for (int i = 0; i < data.limit(); i++) {
-            buf.put(offset + i, data.get(i));
-        }
-
-        // record worker num in this ares
-        mmapedAreaUserNumArr[topicNumber].decrementAndGet();
+        byte[] dataBytes = data.array();
+        writeToFile(topicName, dataBytes, data.limit());
     }
 
 

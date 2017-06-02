@@ -45,6 +45,9 @@ public class DataReader {
     static ByteBuffer messageBinary = ByteBuffer.allocate(260 * 1024);
     static MessageDeserialization messageDeserialization = new MessageDeserialization();
 
+    static AtomicInteger consumerFinishedAttached = new AtomicInteger(10);
+
+
     public DataReader(String rootFilePath) {
         initLock.lock();
         if (!isInit) {
@@ -75,32 +78,16 @@ public class DataReader {
         initLock.unlock();
 
         int myRank = numberOfConsumer.getAndIncrement();
-        if (myRank < BUFFER_NUMBER && currentChunkNum.get() >= 0) {
-            int myTopicNumber = currentChunkNum.getAndDecrement();
-            try {
-                bbuf[myRank] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
-                        dataFileIndexer.topicOffsets[myTopicNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            bbuf[myRank].load();
-            transformMappedBufferToMessageList(myRank);
-            DataDumper.unmap(bbuf[myRank]);
-            bbufFinishedTimes[myRank].set(0);
-            String topicName = dataFileIndexer.topicNames[myTopicNumber];
-            LOGGER.info(topicName);
-            topicBuff.put(topicName, myRank);
-        }
+        System.out.println("Number of Consumer: " + (myRank+1));
     }
 
-    private void transformMappedBufferToMessageList(int topicNumber) {
-        if (topicMessageList[topicNumber] == null)
-            topicMessageList[topicNumber] = new ArrayList<>();
-        topicMessageList[topicNumber].clear();
+    private void transformMappedBufferToMessageList(int topicBuffNumber, int globalTopicChunkNumber) {
+        if (topicMessageList[topicBuffNumber] == null)
+            topicMessageList[topicBuffNumber] = new ArrayList<>();
+        topicMessageList[topicBuffNumber].clear();
 
-        MappedByteBuffer buf = bbuf[topicNumber];
-        for (int miniChunkNum = 0; miniChunkNum <= dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber]; miniChunkNum++) {
+        MappedByteBuffer buf = bbuf[topicBuffNumber];
+        for (int miniChunkNum = 0; miniChunkNum <= dataFileIndexer.topicMiniChunkCurrMaxIndex[globalTopicChunkNumber]; miniChunkNum++) {
             int currentOffset = 0;
             int miniChunkOffset = dataFileIndexer.MINI_CHUNK_SIZE * miniChunkNum;
             buf.position(miniChunkOffset);
@@ -111,15 +98,16 @@ public class DataReader {
                     messageBinary.put(buf.get());
                 }
                 messageBinary.flip();
-                topicMessageList[topicNumber].add(messageDeserialization.deserialize(messageBinary));
+                topicMessageList[topicBuffNumber].add(messageDeserialization.deserialize(messageBinary));
                 currentOffset += dataLength + Integer.BYTES;
-                if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[topicNumber][miniChunkNum])
+                if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[globalTopicChunkNumber][miniChunkNum])
                     break;
             }
         }
     }
 
     public MappedByteBuffer getBufferedTopic(String topicName) {
+        //LOGGER.info("Fetching " + topicName);
         while (!topicBuff.containsKey(topicName)) {
             //System.out.println(topicBuff.containsKey(topicName));
             try {
@@ -136,10 +124,13 @@ public class DataReader {
     }
 
     public ArrayList<DefaultBytesMessage> getTopicArrayList(String topicName) {
+        LOGGER.info("Fetching " + topicName);
         while (!topicBuff.containsKey(topicName)) {
+            LOGGER.info("NOT FOUND: " + topicName);
             try {
                 hasNewDataBlockLoaded.lock();
                 hasNewDataBlockLoadedCondition.await();
+                LOGGER.info("Awake, check topic: " + topicName);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
@@ -150,31 +141,67 @@ public class DataReader {
         return topicMessageList[topicBuff.get(topicName)];
     }
 
-    public void finishedTopic(String topicName) {
-        int topicBuffNum = topicBuff.get(topicName);
-        int finished = bbufFinishedTimes[topicBuffNum].incrementAndGet();
-        //the last one consumer on this topic
-        if (finished == topicWaiterNumber.get(topicName).get()) {
-            bbufFinishedTimes[topicBuffNum].set(0);
-            //load next topic chunk
-            int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
-            if (globalTopicChunkNumber < 0) return;
-            try {
-                bbuf[topicBuffNum] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
-                        dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
-            } catch (IOException e) {
-                e.printStackTrace();
+    public void countTopicListenerNumber(ArrayList<String> nameList){
+        for(String topic:nameList){
+            topicWaiterNumberLock.lock();
+            if(!topicWaiterNumber.containsKey(topic)){
+                topicWaiterNumber.put(topic, new AtomicInteger(0));
             }
+            topicWaiterNumber.get(topic).incrementAndGet();
+            topicWaiterNumberLock.unlock();
+        }
+        int myRank = consumerFinishedAttached.decrementAndGet();
+        if(myRank == 0){
+            String firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.get()];
+            while(!topicWaiterNumber.containsKey(firstLoadTopicChunk) || topicWaiterNumber.get(firstLoadTopicChunk).get() == 0){
+                firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.getAndDecrement()];
+            }
+            loadOneTopicChunk(0);
+        }
+    }
 
-            bbuf[topicBuffNum].load();
-            transformMappedBufferToMessageList(topicBuffNum);
-            DataDumper.unmap(bbuf[topicBuffNum]);
-            bbufFinishedTimes[topicBuffNum].set(0);
-            topicBuff.put(dataFileIndexer.topicNames[globalTopicChunkNumber], topicBuffNum);
-            hasNewDataBlockLoaded.lock();
-            hasNewDataBlockLoadedCondition.signalAll();
-            hasNewDataBlockLoaded.unlock();
+    private void loadOneTopicChunk(int topicBuffNumber){
+        //load next topic chunk
+        if(currentChunkNum.get() < 0){
+            LOGGER.info("All chunk finished. exit loader..");
+            return;
+        }
+        LOGGER.info("load " + dataFileIndexer.topicNames[currentChunkNum.get()]);
+        int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
+        if (globalTopicChunkNumber < 0) return;
+        while(topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]) == null ||
+                topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]).get() == 0){
+            globalTopicChunkNumber = currentChunkNum.getAndDecrement();
+            if (globalTopicChunkNumber < 0) return;
+        }
 
+        try {
+            bbuf[topicBuffNumber] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
+                    dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        bbuf[topicBuffNumber].load();
+        transformMappedBufferToMessageList(topicBuffNumber, globalTopicChunkNumber);
+        DataDumper.unmap(bbuf[topicBuffNumber]);
+        bbufFinishedTimes[topicBuffNumber].set(0);
+        topicBuff.put(dataFileIndexer.topicNames[globalTopicChunkNumber], topicBuffNumber);
+        hasNewDataBlockLoaded.lock();
+        hasNewDataBlockLoadedCondition.signalAll();
+        hasNewDataBlockLoaded.unlock();
+    }
+
+    public void finishedTopic(String topicName) {
+
+        int topicBuffNum = topicBuff.get(topicName);
+        int finished = topicWaiterNumber.get(topicName).decrementAndGet();
+        //int finished = bbufFinishedTimes[topicBuffNum].incrementAndGet();
+        //the last one consumer on this topic
+        if (finished == 0) {
+            LOGGER.info("finished " + topicName);
+            //DataDumper.unmap(bbuf[topicBuffNum]);
+            loadOneTopicChunk(topicBuffNum);
         }
     }
 

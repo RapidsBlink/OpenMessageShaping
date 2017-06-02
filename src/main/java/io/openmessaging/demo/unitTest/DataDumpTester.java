@@ -44,7 +44,7 @@ class Worker extends Thread {
                 input[j] = (byte) ((input[0] + j) % 128);
             }
             try {
-                dd.writeToFile(topic, input);
+                dd.writeToFile(topic, input, input.length);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -75,14 +75,7 @@ class Reader extends Thread {
                     myNameList.add(topic);
             }
         }
-        for(String topic:nameList){
-            DataReader.topicWaiterNumberLock.lock();
-            if(!DataReader.topicWaiterNumber.containsKey(topic)){
-                DataReader.topicWaiterNumber.put(topic, new AtomicInteger(0));
-            }
-            DataReader.topicWaiterNumber.get(topic).incrementAndGet();
-            DataReader.topicWaiterNumberLock.unlock();
-        }
+        dr.countTopicListenerNumber(myNameList);
     }
     public void run() {
         for (String topic : myNameList) {
@@ -142,6 +135,10 @@ public class DataDumpTester {
         applog.addHandler( systemOut );
         applog.setLevel( Level.ALL );
 
+
+        //new DataDumpTester().multiThreadsWriter();
+
+        //LOGGER.info("Data dump finished");
         new DataDumpTester().multiThreadsReader();
 
     }
@@ -169,13 +166,7 @@ public class DataDumpTester {
     }
 
     public void multiThreadsReader() throws IOException {
-        long start = System.currentTimeMillis();
-        multiThreadsWriter();
-        long end = System.currentTimeMillis();
-        LOGGER.info("Producer Finished, Cost " + (end - start) + " ms");
-
-        LOGGER.info("Data dump finished");
-
+        long start, end;
         ArrayList<Thread> threads = new ArrayList<>();
 
         ArrayList<String> allTopics = new ArrayList<>();

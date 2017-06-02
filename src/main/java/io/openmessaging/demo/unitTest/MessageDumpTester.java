@@ -27,7 +27,7 @@ class MessageWorker extends Thread {
 
     public MessageWorker() throws IOException {
         for (int i = 0; i < 70; i++) {
-            topics.add("TOPIC" + i);
+            topics.add("TOPIC_" + i);
         }
     }
 
@@ -49,11 +49,12 @@ class MessageWorker extends Thread {
             DefaultBytesMessage message = new DefaultBytesMessage(input);
             message.putHeaders(MessageHeader.TOPIC, topic);
             message.putProperties("id", i%128);
+            //byte[] messageBinary = messageSerialization.serialize(message);
             messageBinary.clear();
             messageSerialization.serialize(message, messageBinary);
             messageBinary.flip();
             try {
-                dd.writeToFile(topic, messageBinary);
+                dd.writeToFile(topic, messageBinary.array(), messageBinary.limit());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -85,14 +86,7 @@ class MessageReader extends Thread {
                     myNameList.add(topic);
             }
         }
-        for(String topic:nameList){
-            DataReader.topicWaiterNumberLock.lock();
-            if(!DataReader.topicWaiterNumber.containsKey(topic)){
-                DataReader.topicWaiterNumber.put(topic, new AtomicInteger(0));
-            }
-            DataReader.topicWaiterNumber.get(topic).incrementAndGet();
-            DataReader.topicWaiterNumberLock.unlock();
-        }
+        dr.countTopicListenerNumber(myNameList);
     }
     public void run() {
         for (String topic : myNameList) {
@@ -130,27 +124,28 @@ public class MessageDumpTester {
         applog.addHandler( systemOut );
         applog.setLevel( Level.ALL );
 
+        new MessageDumpTester().multiThreadsWriter();
         new MessageDumpTester().multiThreadsReader();
     }
     public void multiThreadsReader() throws IOException {
-        long start = System.currentTimeMillis();
-        multiThreadsWriter();
-        long end = System.currentTimeMillis();
-        LOGGER.info("Producer Finished, Cost " + (end - start) + " ms");
-
-        LOGGER.info("Data dump finished");
+       long start, end;
 
         ArrayList<Thread> threads = new ArrayList<>();
 
         ArrayList<String> allTopics = new ArrayList<>();
 
         for (int i = 0; i < 70; i++) {
-            allTopics.add("TOPIC" + i);
+            allTopics.add("TOPIC_" + i);
         }
 
         start = System.currentTimeMillis();
         for (int i = 0; i < 10; i++) {
-            threads.add(new MessageReader(new ArrayList<>(allTopics.subList(i * 7, (i+1)*7))));
+            ArrayList<String> subTopics = new ArrayList<>(allTopics.subList(i * 7, (i+1)*7));
+            Random rint = new Random();
+            for(int j = 0 ; j < 30; j ++){
+                subTopics.add(allTopics.get(rint.nextInt(70)));
+            }
+            threads.add(new MessageReader(subTopics));
         }
         for (int i = 0; i < 10; i++) {
             threads.get(i).start();

@@ -5,7 +5,9 @@ public class ProducerAndConsumerTest {
 
 
     public static void main(String[] args) throws Exception {
-        ProducerTester.main(null);
+        //new io.openmessaging.demo.unitTest.MessageDumpTester().multiThreadsWriter();
+        //ProducerTester.main(null);
         ConsumerTester.main(null);
+        //new io.openmessaging.demo.unitTest.MessageDumpTester().multiThreadsReader();
     }
 }
