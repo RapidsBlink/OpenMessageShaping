@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DataDumper {
     private static String rootPath;
-    private static long DATA_FILE_SIZE = 10L * 1024 * 1024 * 1024; // 8GB
+    private static long DATA_FILE_SIZE = 12L * 1024 * 1024 * 1024; // 8GB
 
     private static RandomAccessFile dataFile;
     private static FileChannel dataFileChannel;
@@ -33,6 +33,9 @@ public class DataDumper {
     private static boolean isInit = false;
     private static ReentrantLock initLock = new ReentrantLock();
 
+    static byte[][] topicWriteBuff = new byte[dataFileIndexer.INIT_MAX_TOPIC_NUMBER][];
+    private ByteBuffer integerToByte = ByteBuffer.allocate(Integer.BYTES);
+
     //static ReentrantLock mmapUmapLock = new ReentrantLock();
 
     public DataDumper(String fileRootPath) throws IOException {
@@ -44,6 +47,7 @@ public class DataDumper {
             dataFileChannel = dataFile.getChannel();
             for (int i = 0; i < dataFileIndexer.INIT_MAX_TOPIC_NUMBER; i++) {
                 topicMappedBuff[i] = null;
+                topicWriteBuff[i] = null;
                 topicWriteLocks[i] = new ReentrantLock();
                 mmapedAreaUserNumArr[i] = new AtomicInteger(0);
             }
@@ -59,19 +63,28 @@ public class DataDumper {
         int topicNumber = dataFileIndexer.getAssignedTopicNumber(topicName);
 
         int offset = getMessageWriteOffset(topicNumber, length + Integer.BYTES);
-        int currentTopicMiniChunkIndex = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
+        //int currentTopicMiniChunkIndex = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
 
-        MappedByteBuffer buf = topicMappedBuff[topicNumber];
+        //MappedByteBuffer buf = topicMappedBuff[topicNumber];
 
         //System.out.println(offset + " topic: " + dataFileIndexer.topicNames[topicNumber] + " MiniChunkIndex:" + currentTopicMiniChunkIndex);
-
-        // 1st: length of byte arr
-        buf.putInt(offset, length);
-        offset += Integer.BYTES;
-        // 2nd: byte arr
-        for (int i = 0; i < length; i++) {
-            buf.put(offset + i, data[i]);
+        integerToByte.clear();
+        integerToByte.putInt(length);
+        byte[] integerByte = integerToByte.array();
+        for(int i = 0 ; i < Integer.BYTES; i++){
+            topicWriteBuff[topicNumber][offset + i] = integerByte[i];
         }
+        offset+= Integer.BYTES;
+        for(int i = 0 ; i < length; i++){
+            topicWriteBuff[topicNumber][offset + i] = data[i];
+        }
+        // 1st: length of byte arr
+//        buf.putInt(offset, length);
+//        offset += Integer.BYTES;
+//        // 2nd: byte arr
+//        for (int i = 0; i < length; i++) {
+//            buf.put(offset + i, data[i]);
+//        }
 
         // record worker num in this ares
         mmapedAreaUserNumArr[topicNumber].decrementAndGet();
@@ -116,18 +129,20 @@ public class DataDumper {
     private int assignNextMiniChunk(int topicNumber) throws IOException {
         if (topicMappedBuff[topicNumber] != null) {
             // sync: which is optional, async also keeps correctness
-
             // need to make sure no other threads use this mapped area, busy waiting here
             while (mmapedAreaUserNumArr[topicNumber].get() >= 0) {
                 if (mmapedAreaUserNumArr[topicNumber].get() == 0) {
                     //mmapUmapLock.lock();
                     //topicMappedBuff[topicNumber].force();
+                    topicMappedBuff[topicNumber].put(topicWriteBuff[topicNumber]);
                     unmap(topicMappedBuff[topicNumber]);
                     //mmapUmapLock.unlock();
                     break;
                 }
             }
         }
+        if(topicWriteBuff[topicNumber] == null)
+            topicWriteBuff[topicNumber] = new byte[MINI_CHUNK_SIZE];
         dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber]++;
         int currentMiniChunkNum = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
         // init 4MB mini chunk, set length 0
@@ -135,6 +150,7 @@ public class DataDumper {
         long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
         //mmapUmapLock.lock();
         topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
+        //topicMappedBuff[topicNumber].load();
         //mmapUmapLock.unlock();
         return currentMiniChunkNum;
 
@@ -159,14 +175,17 @@ public class DataDumper {
     }
 
     public void close() throws IOException {
-//        for (int i = 0; i < dataFileIndexer.INIT_MAX_TOPIC_NUMBER; i++) {
-//            if (topicMappedBuff[i] != null) {
-//                unmap(topicMappedBuff[i]);
-//            }
-//        }
 
         int finished = numberOfFinished.incrementAndGet();
         if (finished == numberOfProducer.get()) {
+            for (int i = 0; i < dataFileIndexer.INIT_MAX_TOPIC_NUMBER; i++) {
+                if (topicMappedBuff[i] != null) {
+                    topicMappedBuff[i].put(topicWriteBuff[i]);
+                    //unmap(topicMappedBuff[i]);
+                    //topicMappedBuff[i].force();
+                }
+            }
+
             dataFile.close();
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(rootPath + File.separator + "index.bin")));
             oos.writeObject(dataFileIndexer);

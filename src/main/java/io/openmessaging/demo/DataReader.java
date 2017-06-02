@@ -60,7 +60,8 @@ public class DataReader {
                         new FileInputStream(rootFilePath + File.separator + "index.bin"));
                 dataFileIndexer = (DataFileIndexer) ois.readObject();
 
-                currentChunkNum.set(dataFileIndexer.currentTopicNumber - 1);
+                //currentChunkNum.set(dataFileIndexer.currentTopicNumber - 1);
+                currentChunkNum.set(0);
 
                 dataFile = new RandomAccessFile(rootFilePath + File.separator + "data.bin", "rw");
                 dataFileChannel = dataFile.getChannel();
@@ -74,7 +75,7 @@ public class DataReader {
                 bbufFinishedTimes[i] = new AtomicInteger(0);
             }
 
-            for (int i = dataFileIndexer.currentTopicNumber - 1; i >= 0; i--) {
+            for (int i = 0; i < dataFileIndexer.currentTopicNumber; i++) {
                 topicsReverseOrderInDataFile.add(dataFileIndexer.topicNames[i]);
             }
         }
@@ -114,16 +115,18 @@ public class DataReader {
         //topicBuffRWLock.readLock().lock();
         boolean hasLoadedTopic = topicBuff.containsKey(topicName);
         //topicBuffRWLock.readLock().unlock();
-        while (!hasLoadedTopic) {
-            //System.out.println(topicBuff.containsKey(topicName));
-            try {
-                hasNewDataBlockLoaded.lock();
+        hasNewDataBlockLoaded.lock();
+        try {
+            while (!hasLoadedTopic) {
+                //System.out.println(topicBuff.containsKey(topicName));
                 hasNewDataBlockLoadedCondition.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                hasNewDataBlockLoaded.unlock();
+                hasLoadedTopic = topicBuff.containsKey(topicName);
+
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            hasNewDataBlockLoaded.unlock();
         }
         //here we can ensure data has been loaded
         //topicBuffRWLock.readLock().lock();
@@ -179,7 +182,7 @@ public class DataReader {
         if (myRank == 0) {
             String firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.get()];
             while (!topicWaiterNumber.containsKey(firstLoadTopicChunk) || topicWaiterNumber.get(firstLoadTopicChunk).get() == 0) {
-                firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.getAndDecrement()];
+                firstLoadTopicChunk = dataFileIndexer.topicNames[currentChunkNum.getAndIncrement()];
             }
             loadOneTopicChunk(0);
         }
@@ -192,16 +195,16 @@ public class DataReader {
 //            return;
 //        }
         //LOGGER.info("load " + dataFileIndexer.topicNames[currentChunkNum.get()]);
-        int globalTopicChunkNumber = currentChunkNum.getAndDecrement();
-        if (globalTopicChunkNumber < 0) return;
+        int globalTopicChunkNumber = currentChunkNum.getAndIncrement();
+        if (globalTopicChunkNumber >= dataFileIndexer.currentTopicNumber) return;
         while (topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]) == null ||
                 topicWaiterNumber.get(dataFileIndexer.topicNames[globalTopicChunkNumber]).get() == 0) {
-            globalTopicChunkNumber = currentChunkNum.getAndDecrement();
-            if (globalTopicChunkNumber < 0) return;
+            globalTopicChunkNumber = currentChunkNum.getAndIncrement();
+            if (globalTopicChunkNumber >= dataFileIndexer.currentTopicNumber) return;
         }
 
         try {
-            bbuf[topicBuffNumber] = dataFileChannel.map(FileChannel.MapMode.PRIVATE,
+            bbuf[topicBuffNumber] = dataFileChannel.map(FileChannel.MapMode.READ_ONLY,
                     dataFileIndexer.topicOffsets[globalTopicChunkNumber], dataFileIndexer.TOPIC_CHUNK_SIZE);
         } catch (IOException e) {
             e.printStackTrace();
@@ -209,7 +212,6 @@ public class DataReader {
 
         bbuf[topicBuffNumber].load();
         transformMappedBufferToMessageList(topicBuffNumber, globalTopicChunkNumber);
-        DataDumper.unmap(bbuf[topicBuffNumber]);
         bbufFinishedTimes[topicBuffNumber].set(0);
         //topicBuffRWLock.writeLock().lock();
         topicBuff.put(dataFileIndexer.topicNames[globalTopicChunkNumber], topicBuffNumber);
@@ -227,7 +229,7 @@ public class DataReader {
         //the last one consumer on this topic
         if (finished == 0) {
             //LOGGER.info("finished " + topicName);
-            //DataDumper.unmap(bbuf[topicBuffNum]);
+            DataDumper.unmap(bbuf[topicBuffNum]);
             loadOneTopicChunk(topicBuffNum);
         }
     }

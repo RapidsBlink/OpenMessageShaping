@@ -136,9 +136,9 @@ public class DataDumpTester {
         applog.setLevel( Level.ALL );
 
 
-        //new DataDumpTester().multiThreadsWriter();
+        new DataDumpTester().multiThreadsWriter();
 
-        //LOGGER.info("Data dump finished");
+        LOGGER.info("Data dump finished");
         new DataDumpTester().multiThreadsReader();
 
     }

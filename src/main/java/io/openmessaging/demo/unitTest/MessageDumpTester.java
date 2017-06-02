@@ -33,7 +33,7 @@ class MessageWorker extends Thread {
 
     public void run() {
         Random rnd = new Random();
-        for (int i = 0; i < 400000; i++) {
+        for (int i = 0; i < 4000000; i++) {
             //String topic = topics.get(rnd.nextInt(5));
             String topic = topics.get(i % 70);
             int length = 80;
