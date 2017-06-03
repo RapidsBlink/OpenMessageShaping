@@ -1,14 +1,12 @@
 package io.openmessaging.demo;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by will on 25/5/2017.
@@ -60,9 +58,9 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-            FileWriter myFile = new FileWriter(rootPath + File.separator + folderName + File.separator + fileName);
-            BufferedWriter bw = new BufferedWriter(myFile);
-            myFileName.put(folderName, bw);
+            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
+            myFileName.put(folderName, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }

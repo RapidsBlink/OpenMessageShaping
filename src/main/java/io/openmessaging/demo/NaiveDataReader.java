@@ -2,6 +2,8 @@ package io.openmessaging.demo;
 
 import java.io.*;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by yche on 5/27/17.
@@ -36,8 +38,12 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
     }
 
     private void fetchNextFile() throws FileNotFoundException {
-//        bufferedReader = new BufferedReader(new FileReader(files[fileIndex]), BUFFER_SIZE);
-        bufferedReader = new BufferedReader(new FileReader(files[fileIndex]));
+        try {
+            GZIPInputStream zip = new GZIPInputStream(new FileInputStream(files[fileIndex]));
+            bufferedReader = new BufferedReader(new InputStreamReader(zip));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void attachNames(String queueName, Collection<String> topicNameList) {
