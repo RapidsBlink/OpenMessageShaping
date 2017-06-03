@@ -10,8 +10,7 @@ import java.util.List;
  * Created by will on 27/5/2017.
  */
 public class MessageSerialization {
-    private static final int MAX_MESSAGE_SIZE = 1024 * 512;
-    private final ByteBuffer keyValueByteBuffer;
+    private static final int MAX_MESSAGE_SIZE = 1024 * 260;
     private final ByteBuffer messageByteBuffer;
 
     private final List<YchePair<String, Integer>> integerList = new ArrayList<>();
@@ -20,23 +19,17 @@ public class MessageSerialization {
     private final List<YchePair<String, String>> stringList = new ArrayList<>();
 
     public MessageSerialization() {
-        keyValueByteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
         messageByteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
     }
 
-    private void putLenAndBytesToByteBuffer(byte[] bytes, ByteBuffer byteBuffer) {
-        byteBuffer.putInt(bytes.length);
-        byteBuffer.put(bytes);
-    }
-
     private void putStringToByteBuffer(String myString, ByteBuffer byteBuffer) {
-        putLenAndBytesToByteBuffer(myString.getBytes(), byteBuffer);
+        byte[] myBytes = myString.getBytes();
+        byteBuffer.putInt(myBytes.length);
+        byteBuffer.put(myBytes);
     }
 
     private void serializeHashMapIntoKeyValueBuffer(DefaultKeyValue kv) {
         // write sequentially to buffer
-        keyValueByteBuffer.clear();
-
         integerList.clear();
         longList.clear();
         doubleList.clear();
@@ -55,34 +48,31 @@ public class MessageSerialization {
         });
 
         // 1st: length
-        keyValueByteBuffer.putInt(integerList.size());
-        keyValueByteBuffer.putInt(longList.size());
-        keyValueByteBuffer.putInt(doubleList.size());
-        keyValueByteBuffer.putInt(stringList.size());
+        messageByteBuffer.putShort((short) integerList.size());
+        messageByteBuffer.putShort((short) longList.size());
+        messageByteBuffer.putShort((short) doubleList.size());
+        messageByteBuffer.putShort((short) stringList.size());
 
         // 2nd: pair info
         integerList.forEach((strIntegerPair) -> {
-            putStringToByteBuffer(strIntegerPair.key, keyValueByteBuffer);
-            keyValueByteBuffer.putInt(strIntegerPair.val);
+            putStringToByteBuffer(strIntegerPair.key, messageByteBuffer);
+            messageByteBuffer.putInt(strIntegerPair.val);
         });
 
         longList.forEach((strLongPair) -> {
-            putStringToByteBuffer(strLongPair.key, keyValueByteBuffer);
-            keyValueByteBuffer.putLong(strLongPair.val);
+            putStringToByteBuffer(strLongPair.key, messageByteBuffer);
+            messageByteBuffer.putLong(strLongPair.val);
         });
 
         doubleList.forEach((strDoublePair) -> {
-            putStringToByteBuffer(strDoublePair.key, keyValueByteBuffer);
-            keyValueByteBuffer.putDouble(strDoublePair.val);
+            putStringToByteBuffer(strDoublePair.key, messageByteBuffer);
+            messageByteBuffer.putDouble(strDoublePair.val);
         });
 
         stringList.forEach((strStringPair) -> {
-            putStringToByteBuffer(strStringPair.key, keyValueByteBuffer);
-            putStringToByteBuffer(strStringPair.val, keyValueByteBuffer);
+            putStringToByteBuffer(strStringPair.key, messageByteBuffer);
+            putStringToByteBuffer(strStringPair.val, messageByteBuffer);
         });
-
-        // read from buffer, get byte[]
-        keyValueByteBuffer.flip();
     }
 
     private void serializeDetail(DefaultBytesMessage message) {
@@ -95,12 +85,7 @@ public class MessageSerialization {
 
         // 2nd: write headers, properties (i.e., key_value info)
         serializeHashMapIntoKeyValueBuffer((DefaultKeyValue) message.headers());
-        messageByteBuffer.putInt(keyValueByteBuffer.limit());
-        messageByteBuffer.put(keyValueByteBuffer);
-
         serializeHashMapIntoKeyValueBuffer((DefaultKeyValue) message.properties());
-        messageByteBuffer.putInt(keyValueByteBuffer.limit());
-        messageByteBuffer.put(keyValueByteBuffer);
 
         // 3rd: make buffer readable
         messageByteBuffer.flip();
