@@ -1,7 +1,6 @@
 package io.openmessaging.demo;
 
 import java.io.*;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,24 +23,24 @@ public class DataDump {
     }
 
     private final String rootPath;
-    private final Base64.Encoder base64Encoder;
-    private HashMap<String, BufferedWriter> myFileName;
-
+    //    private final Base64.Encoder base64Encoder;
+    private HashMap<String, DataOutputStream> myFileName;
+    private HashMap<String, GZIPOutputStream> gzipFileName;
 
     public DataDump(String folderRootPath) {
         rootPath = folderRootPath;
         myFileName = new HashMap<>();
-        base64Encoder = Base64.getEncoder();
+//        base64Encoder = Base64.getEncoder();
     }
 
     public void writeToFile(String topicName, byte[] data) {
         if (!myFileName.containsKey(topicName)) {
             createFile(topicName);
         }
-        BufferedWriter bw = myFileName.get(topicName);
+        DataOutputStream bw = myFileName.get(topicName);
         try {
-            bw.write(base64Encoder.encodeToString(data));
-            bw.newLine();
+            bw.writeInt(data.length);
+            bw.write(data);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -60,8 +59,8 @@ public class DataDump {
 
         try {
             MyGZIPOutputStream zip = new MyGZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
-            zip.setLevel(Deflater.BEST_COMPRESSION);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
+            zip.setLevel(Deflater.BEST_SPEED);
+            DataOutputStream writer = new DataOutputStream(new BufferedOutputStream(zip));
             myFileName.put(folderName, writer);
         } catch (IOException e) {
             e.printStackTrace();
@@ -69,6 +68,21 @@ public class DataDump {
     }
 
     public void close() {
+
+        myFileName.forEach((topicName, bw) -> {
+            try {
+                bw.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        gzipFileName.forEach((topicName, bw) -> {
+            try {
+                bw.finish();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         myFileName.forEach((topicName, bw) -> {
             try {
                 bw.close();

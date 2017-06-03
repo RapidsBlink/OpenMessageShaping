@@ -1,9 +1,11 @@
 package io.openmessaging.demo;
 
+import io.openmessaging.MessageHeader;
+
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by yche on 5/27/17.
@@ -23,8 +25,13 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     // 3rd-level one file
 //    private final static int BUFFER_SIZE = 4 * 1024 * 1024;
-    private BufferedReader bufferedReader;
-    private String tmpBinString;
+    private DataInputStream bufferedReader;
+
+    private int lenBytes = 0;
+    private byte[] tmpBinString = new byte[260 * 1024];
+    private ByteBuffer byteBuffer = ByteBuffer.allocate(5 * 1024 * 1024);
+    private int curBytesLen = 0;
+//    private byte[] myLenBytes = new byte[4];
 
     public NaiveDataReader(String storePath) {
         this.storePath = storePath;
@@ -39,11 +46,28 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     private void fetchNextFile() throws FileNotFoundException {
         try {
-            GZIPInputStream zip = new GZIPInputStream(new FileInputStream(files[fileIndex]));
-            bufferedReader = new BufferedReader(new InputStreamReader(zip));
+            GZIPInputStream zip = new GZIPInputStream(new BufferedInputStream(new FileInputStream(files[fileIndex])));
+            bufferedReader = new DataInputStream(zip);
+//            bufferedReader = new BufferedReader(new InputStreamReader(zip));
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void fetchData() {
+        try {
+            lenBytes = bufferedReader.readInt();
+            System.out.println(lenBytes);
+            if (bufferedReader.available() == 0) {
+                System.out.println("end shit!");
+            }
+
+            bufferedReader.read(tmpBinString, 0, lenBytes);
+            curBytesLen += lenBytes + Integer.BYTES;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     public void attachNames(String queueName, Collection<String> topicNameList) {
@@ -72,18 +96,14 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        try {
-            tmpBinString = bufferedReader.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        fetchData();
     }
 
     private void nextAndUpdateIteratorStates() throws IOException {
-        tmpBinString = bufferedReader.readLine();
-        // 3rd-level: reach end of file
-        if (tmpBinString == null) {
 
+        // 3rd-level: reach end of file
+        if (curBytesLen >= files[fileIndex].length()) {
+            curBytesLen = 0;
             // 2nd-level: reach end of files in this folder
             fileIndex++;
             if (fileIndex >= files.length) {
@@ -96,10 +116,9 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
                 files = folderFilesList.get(folderIndex);
                 fileIndex = 0;
             }
-
             fetchNextFile();
-            tmpBinString = bufferedReader.readLine();
         }
+        fetchData();
     }
 
     @Override
@@ -109,7 +128,9 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     @Override
     public DefaultBytesMessage next() {
-        DefaultBytesMessage message = messageDeserialization.deserialize(baseDec.decode(tmpBinString.getBytes()));
+        DefaultBytesMessage message = messageDeserialization.deserialize(tmpBinString, 0, lenBytes);
+        System.out.println(message.headers().getString(MessageHeader.TOPIC) != null ? message.headers().getString(MessageHeader.TOPIC) : message.headers().getString(MessageHeader.QUEUE));
+        System.out.println(new String(message.getBody()));
         try {
             nextAndUpdateIteratorStates();
 
