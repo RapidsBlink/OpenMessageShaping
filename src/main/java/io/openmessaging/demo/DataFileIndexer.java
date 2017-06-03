@@ -13,7 +13,7 @@ public class DataFileIndexer implements Serializable {
     // just for testing
     //public int TOPIC_CHUNK_SIZE = 500 * 1024 * 1024; // 400 MB
 
-    public int MINI_CHUNK_SIZE = 4 * 1024 * 1024; // 4MB
+    public int MINI_CHUNK_SIZE = 8 * 1024 * 1024; // 4MB
     public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = TOPIC_CHUNK_SIZE / MINI_CHUNK_SIZE; //20
 
     // for quickly look topic chunk idx from topic name, used in production phase
@@ -26,7 +26,9 @@ public class DataFileIndexer implements Serializable {
     // each 80MB, valid mini chunk number, used in consumption phase
     public int[] topicMiniChunkCurrMaxIndex = new int[INIT_MAX_TOPIC_NUMBER];
     // each 4MB size, valid content, used in consumption phase
-    public int[][] topicMiniChunkLengths;
+    public int[][] topicMiniChunkLengths = new int[INIT_MAX_TOPIC_NUMBER][];
+    //mini chunk start offset within the current topic chunk
+    public int[][] topicMiniChunkStartOffset = new int[INIT_MAX_TOPIC_NUMBER][];
 
     public long currentGlobalDataOffset = 0;
     // serve as index also
@@ -36,11 +38,12 @@ public class DataFileIndexer implements Serializable {
 
     public DataFileIndexer() {
         topicNameToNumber.clear();
-        topicMiniChunkLengths = new int[INIT_MAX_TOPIC_NUMBER][];
+
         for (int i = 0; i < INIT_MAX_TOPIC_NUMBER; i++) {
             topicOffsets[i] = 0L;
             topicMiniChunkCurrMaxIndex[i] = -1;
             topicMiniChunkLengths[i] = new int[MAX_MINI_CHUNK_NUMBER_PER_TOPIC];
+            topicMiniChunkStartOffset[i] = new int[MAX_MINI_CHUNK_NUMBER_PER_TOPIC];
         }
     }
 

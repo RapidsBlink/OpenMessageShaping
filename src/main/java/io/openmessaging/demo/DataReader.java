@@ -93,9 +93,11 @@ public class DataReader {
         MappedByteBuffer buf = bbuf[topicBuffNumber];
         for (int miniChunkNum = 0; miniChunkNum <= dataFileIndexer.topicMiniChunkCurrMaxIndex[globalTopicChunkNumber]; miniChunkNum++) {
             int currentOffset = 0;
-            int miniChunkOffset = dataFileIndexer.MINI_CHUNK_SIZE * miniChunkNum;
+            int miniChunkOffset = dataFileIndexer.topicMiniChunkStartOffset[globalTopicChunkNumber][miniChunkNum];
             buf.position(miniChunkOffset);
             while (true) {
+                if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[globalTopicChunkNumber][miniChunkNum])
+                    break;
                 int dataLength = buf.getInt();
                 messageBinary.clear();
                 for (int idx = 0; idx < dataLength; idx++) {
@@ -104,8 +106,6 @@ public class DataReader {
                 messageBinary.flip();
                 topicMessageList[topicBuffNumber].add(messageDeserialization.deserialize(messageBinary));
                 currentOffset += dataLength + Integer.BYTES;
-                if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[globalTopicChunkNumber][miniChunkNum])
-                    break;
             }
         }
     }

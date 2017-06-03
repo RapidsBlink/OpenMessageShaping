@@ -177,7 +177,7 @@ public class MessageDumpTester {
             }
         }
         long end = System.currentTimeMillis();
-        LOGGER.info("Consumer Finished, Cost " + (end - start) + " ms");
+        LOGGER.info("Producer Finished, Cost " + (end - start) + " ms");
         LOGGER.info("DataDump Finished.");
 
     }
