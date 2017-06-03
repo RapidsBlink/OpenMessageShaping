@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -58,7 +59,8 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
+            MyGZIPOutputStream zip = new MyGZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
+            zip.setLevel(Deflater.BEST_COMPRESSION);
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
             myFileName.put(folderName, writer);
         } catch (IOException e) {
