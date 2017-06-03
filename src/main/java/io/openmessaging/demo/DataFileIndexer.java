@@ -13,7 +13,7 @@ public class DataFileIndexer implements Serializable {
     // just for testing
     //public int TOPIC_CHUNK_SIZE = 500 * 1024 * 1024; // 400 MB
 
-    public int MINI_CHUNK_SIZE = 16 * 1024 * 1024; // 16MB
+    public int MINI_CHUNK_SIZE = 8 * 1024 * 1024; // 16MB
     public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = TOPIC_CHUNK_SIZE / MINI_CHUNK_SIZE; //20
 
     // for quickly look topic chunk idx from topic name, used in production phase

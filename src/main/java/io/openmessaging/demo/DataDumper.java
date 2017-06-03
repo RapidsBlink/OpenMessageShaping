@@ -1,11 +1,13 @@
 package io.openmessaging.demo;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -14,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DataDumper {
     private static String rootPath;
-    private static long DATA_FILE_SIZE = 12L * 1024 * 1024 * 1024; // 8GB
+    private static long DATA_FILE_SIZE = 10L * 1024 * 1024 * 1024; // 8GB
 
     private static RandomAccessFile dataFile;
     private static FileChannel dataFileChannel;
@@ -211,7 +213,17 @@ public class DataDumper {
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(rootPath + File.separator + "index.bin")));
             oos.writeObject(dataFileIndexer);
             oos.close();
+            System.out.println("topic number: " + dataFileIndexer.topicNameToNumber.size());
+            System.out.println("topic names: " + Arrays.toString(dataFileIndexer.topicNames));
+            System.out.println("topic mini chunk number: " + Arrays.toString(dataFileIndexer.topicMiniChunkCurrMaxIndex));
+            for(int i = 0 ; i < dataFileIndexer.INIT_MAX_TOPIC_NUMBER; i++){
+                if(dataFileIndexer.topicMiniChunkCurrMaxIndex[i] >=0){
+                    System.out.println("start offset:" + Arrays.toString(dataFileIndexer.topicMiniChunkStartOffset[i]));
+                    System.out.println("length:" + Arrays.toString(dataFileIndexer.topicMiniChunkLengths[i]));
+                }
+            }
         }
     }
+
 }
 
