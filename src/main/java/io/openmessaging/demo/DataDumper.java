@@ -134,6 +134,7 @@ public class DataDumper {
                 if (mmapedAreaUserNumArr[topicNumber].get() == 0) {
                     //mmapUmapLock.lock();
                     //topicMappedBuff[topicNumber].force();
+
                     topicMappedBuff[topicNumber].put(topicWriteBuff[topicNumber]);
                     unmap(topicMappedBuff[topicNumber]);
                     //mmapUmapLock.unlock();

@@ -37,9 +37,9 @@ class MessageWorker extends Thread {
             //String topic = topics.get(rnd.nextInt(5));
             String topic = topics.get(i % 70);
             int length = 80;
-//            if (i % 1000 == 0) {
-//                length = 256 * 1024;
-//            }
+            if (i % 100000 == 0) {
+                length = 250 * 1024;
+            }
 
             byte[] input = new byte[length];
             input[0] = (byte) (i % 128);
