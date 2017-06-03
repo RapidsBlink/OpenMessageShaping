@@ -8,8 +8,7 @@ import java.nio.MappedByteBuffer;
  * Created by yche on 6/2/17.
  */
 public class FileUtils {
-    public static final int CHUNK_SIZE = 128 * 1024 * 1024;
-    public static final long MAX_FILE_SIZE = 10L * 1024 * 1024 * 1024;
+
 
     public static void unmap(MappedByteBuffer mbb) {
         try {

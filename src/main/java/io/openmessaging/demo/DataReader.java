@@ -11,13 +11,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.openmessaging.demo.Constants.CHUNK_SIZE;
 import static io.openmessaging.demo.FileUtils.unmap;
 
 /**
  * Created by will on 31/5/2017.
  */
 public class DataReader {
-    private static int CHUNK_SIZE = 128 * 1024 * 1024;
     private static boolean isInit = false;
     private static ReentrantLock initLock = new ReentrantLock();
     private static RandomAccessFile dataFile;

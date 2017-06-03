@@ -7,8 +7,8 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static io.openmessaging.demo.FileUtils.CHUNK_SIZE;
-import static io.openmessaging.demo.FileUtils.MAX_FILE_SIZE;
+import static io.openmessaging.demo.Constants.CHUNK_SIZE;
+import static io.openmessaging.demo.Constants.MAX_FILE_SIZE;
 import static io.openmessaging.demo.FileUtils.unmap;
 
 
