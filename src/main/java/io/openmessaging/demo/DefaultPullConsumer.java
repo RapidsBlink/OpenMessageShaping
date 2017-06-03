@@ -8,11 +8,11 @@ import java.util.Collection;
 
 public class DefaultPullConsumer implements PullConsumer {
     private KeyValue properties;
-    private NaiveDataReader naiveDataReader;
-
+    //private NaiveDataReader naiveDataReader;
+    private  DataReader dr;
     public DefaultPullConsumer(KeyValue properties) {
         this.properties = properties;
-        this.naiveDataReader = new NaiveDataReader(properties.getString("STORE_PATH"));
+        dr = new DataReader(properties.getString("STORE_PATH"));
     }
 
     @Override
@@ -22,11 +22,7 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override
     public Message poll() {
-        if (naiveDataReader.hasNext()) {
-            return naiveDataReader.next();
-        } else {
-            return null;
-        }
+        return dr.fetchNextMessage();
     }
 
     @Override
@@ -46,6 +42,6 @@ public class DefaultPullConsumer implements PullConsumer {
 
     @Override
     public void attachQueue(String queueName, Collection<String> topics) {
-        naiveDataReader.attachNames(queueName, topics);
+        dr.attachTopics(queueName, topics);
     }
 }

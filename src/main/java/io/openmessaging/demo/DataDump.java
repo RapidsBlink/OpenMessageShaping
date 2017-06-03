@@ -43,6 +43,7 @@ public class DataDump {
         try {
             integerToBytes.clear();
             bw.write(integerToBytes.putInt(data.length).array());
+            bw.write(data);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -70,6 +71,7 @@ public class DataDump {
     public void close() {
         myFileName.forEach((topicName, bw) -> {
             try {
+                bw.finish();
                 bw.close();
             } catch (IOException e) {
                 e.printStackTrace();
