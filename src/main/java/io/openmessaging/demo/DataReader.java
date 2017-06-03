@@ -82,11 +82,12 @@ public class DataReader {
         File nextFile = topicFileList.get(myToplicList.get(currentTopicIndex)).get(innerTopicFileIndex);
         currentFileContent.clear();
         try {
-            GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(nextFile), 4 * 1024 * 1024);
+            GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(nextFile));
+            BufferedInputStream bis = new BufferedInputStream(gzipInputStream);
             //init 8MB
             ByteArrayOutputStream bos = new ByteArrayOutputStream(4 * 1024 * 1024);
             int len;
-            while ((len = gzipInputStream.read(readBuff)) > 0) {
+            while ((len = bis.read(readBuff)) > 0) {
                 bos.write(readBuff, 0, len);
             }
             ByteBuffer fileContent = ByteBuffer.wrap(bos.toByteArray());

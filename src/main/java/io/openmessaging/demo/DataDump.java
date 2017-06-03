@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -25,24 +24,27 @@ public class DataDump {
     }
 
     private final String rootPath;
-    private final Base64.Encoder base64Encoder;
-    private HashMap<String, GZIPOutputStream> myFileName;
-    private ByteBuffer integerToBytes = ByteBuffer.allocate(4);
+    //private final Base64.Encoder base64Encoder;
+    private HashMap<String, BufferedOutputStream> myFileName;
+
+    private ByteBuffer integerToBytes = ByteBuffer.allocate(Integer.BYTES);
+
 
     public DataDump(String folderRootPath) {
         rootPath = folderRootPath;
         myFileName = new HashMap<>();
-        base64Encoder = Base64.getEncoder();
+        //base64Encoder = Base64.getEncoder();
     }
 
     public void writeToFile(String topicName, byte[] data) {
         if (!myFileName.containsKey(topicName)) {
             createFile(topicName);
         }
-        GZIPOutputStream bw = myFileName.get(topicName);
+        BufferedOutputStream bw = myFileName.get(topicName);
         try {
             integerToBytes.clear();
-            bw.write(integerToBytes.putInt(data.length).array());
+            integerToBytes.putInt(data.length);
+            bw.write(integerToBytes.array());
             bw.write(data);
         } catch (IOException e) {
             e.printStackTrace();
@@ -61,8 +63,9 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(rootPath + File.separator + folderName + File.separator + fileName), 1 * 1024 * 1024);
-            myFileName.put(folderName, zip);
+            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
+            BufferedOutputStream writer = new BufferedOutputStream(zip);
+            myFileName.put(folderName, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -71,7 +74,6 @@ public class DataDump {
     public void close() {
         myFileName.forEach((topicName, bw) -> {
             try {
-                bw.finish();
                 bw.close();
             } catch (IOException e) {
                 e.printStackTrace();
