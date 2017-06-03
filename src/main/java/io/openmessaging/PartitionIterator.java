@@ -65,7 +65,7 @@ public interface PartitionIterator {
      * traversing the iterator in the forward direction.
      *
      * @return {@code true} if the partition iterator has more messages when
-     *         traversing the iterator in the forward direction
+     * traversing the iterator in the forward direction
      */
     boolean hasNext();
 
@@ -85,7 +85,7 @@ public interface PartitionIterator {
      * traversing the iterator in the reverse direction.
      *
      * @return {@code true} if the partition iterator has more messages when
-     *         traversing the iterator in the reverse direction
+     * traversing the iterator in the reverse direction
      */
     boolean hasPrevious();
 

@@ -18,6 +18,7 @@
 package io.openmessaging;
 
 import io.openmessaging.exception.OMSResourceNotExistException;
+
 import java.util.List;
 
 /**
@@ -38,7 +39,6 @@ import java.util.List;
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
- *
  * @version OMS 1.0
  * @since OMS 1.0
  */
@@ -49,7 +49,7 @@ public interface ResourceManager extends ServiceLifecycle {
      * <p>
      * Note that this method will simply create the physical Namespace in the specified {@code MessagingAccessPoint}.
      *
-     * @param nsName a namespace name
+     * @param nsName     a namespace name
      * @param properties the preset properties
      */
     void createAndUpdateNamespace(String nsName, KeyValue properties);
@@ -60,7 +60,7 @@ public interface ResourceManager extends ServiceLifecycle {
      * <p>
      * Note that this method will simply create the physical topic in the specified {@code MessagingAccessPoint}.
      *
-     * @param topicName a topic name
+     * @param topicName  a topic name
      * @param properties the preset properties
      */
     void createAndUpdateTopic(String topicName, KeyValue properties);
@@ -71,8 +71,8 @@ public interface ResourceManager extends ServiceLifecycle {
      * <p>
      * Note that this method will simply create the physical queue in the specified {@code MessagingAccessPoint}.
      *
-     * @param queueName a queue name
-     * @param filter a specified filter
+     * @param queueName  a queue name
+     * @param filter     a specified filter
      * @param properties the preset properties
      */
     void createAndUpdateQueue(String queueName, Filters filter, KeyValue properties);
@@ -81,6 +81,7 @@ public interface ResourceManager extends ServiceLifecycle {
      * Destroys a physical namespace in the specified {@code MessagingAccessPoint}.
      * <p>
      * All this namespace related physical resources may be deleted immediately.
+     *
      * @param nsName a namespace name to be destroyed
      */
     void destroyNamespace(String nsName);
@@ -89,6 +90,7 @@ public interface ResourceManager extends ServiceLifecycle {
      * Destroys a physical topic in the specified {@code MessagingAccessPoint}.
      * <p>
      * All this topic related physical resources may be deleted immediately.
+     *
      * @param topicName a namespace name to be destroyed
      */
     void destroyTopic(String topicName);
@@ -97,6 +99,7 @@ public interface ResourceManager extends ServiceLifecycle {
      * Destroys a physical queue in the specified {@code MessagingAccessPoint}.
      * <p>
      * All this queue related physical resources may be deleted immediately.
+     *
      * @param queueName a namespace name to be destroyed
      */
     void destroyQueue(String queueName);

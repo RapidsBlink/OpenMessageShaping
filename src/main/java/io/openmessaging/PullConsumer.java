@@ -18,6 +18,7 @@
 package io.openmessaging;
 
 import io.openmessaging.exception.OMSRuntimeException;
+
 import java.util.Collection;
 
 /**
@@ -52,6 +53,7 @@ public interface PullConsumer {
      */
     /**
      * 规范要求实现阻塞的接口，由properties来设置阻塞时间，但本赛题不需要用到该特性，请实现一个非阻塞(也即阻塞时间为0)调用, 也即没有消息则返回null
+     *
      * @return
      */
     Message poll();
@@ -65,7 +67,7 @@ public interface PullConsumer {
      * @return the next message produced for this {@code PullConsumer}, or null if this {@code PullConsumer} is
      * concurrently shut down
      * @throws OMSRuntimeException if this {@code PullConsumer} fails to pull the next message due to some internal
-     * error.
+     *                             error.
      */
     Message poll(final KeyValue properties);
 
@@ -89,6 +91,7 @@ public interface PullConsumer {
 
     /**
      * 绑定到一个Queue，并订阅topics，即从这些topic读取消息
+     *
      * @param queueName
      * @param topics
      */

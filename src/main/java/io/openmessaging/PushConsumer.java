@@ -26,10 +26,9 @@ import io.openmessaging.exception.OMSRuntimeException;
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
- *
  * @version OMS 1.0
- * @since OMS 1.0
  * @see MessagingAccessPoint#createPushConsumer()
+ * @since OMS 1.0
  */
 public interface PushConsumer extends ServiceLifecycle {
     /**
@@ -76,8 +75,7 @@ public interface PushConsumer extends ServiceLifecycle {
      * delivered message is coming.
      *
      * @param queueName a specified queue
-     * @param listener a specified listener to receive new message
-     *
+     * @param listener  a specified listener to receive new message
      * @throws OMSResourceNotExistException if the specified queue is not exists
      */
     PushConsumer attachQueue(String queueName, MessageListener listener) throws OMSResourceNotExistException;

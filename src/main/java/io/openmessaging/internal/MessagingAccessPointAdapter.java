@@ -19,15 +19,10 @@ package io.openmessaging.internal;
 
 import io.openmessaging.KeyValue;
 import io.openmessaging.ServiceEndPoint;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * WARN: The current interface prohibits direct access by the end user
@@ -69,8 +64,7 @@ public class MessagingAccessPointAdapter {
             spiIndex = uri.indexOf(URL_SEPARATOR, index + 1);
             if (spiIndex > 0) {
                 spi = uri.substring(index + 1, spiIndex);
-            }
-            else {
+            } else {
                 spi = uri.substring(index + 1);
             }
             List<String> spiSet = new ArrayList<>();
@@ -88,8 +82,8 @@ public class MessagingAccessPointAdapter {
     }
 
     private static ServiceEndPoint instantiateServiceEndPoint(String driver, KeyValue properties)
-        throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-        InvocationTargetException, InstantiationException {
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+            InvocationTargetException, InstantiationException {
         String serviceImpl = driver;
         if (serviceImpl == null)
             serviceImpl = DEFAULT_SERVICE_IMPL;
@@ -100,7 +94,7 @@ public class MessagingAccessPointAdapter {
             return null;
 
         if (properties.getString(URL) != null) {
-            String[] propertySplits = ((String)properties.getString(URL)).split(PARAM_SEPARATOR);
+            String[] propertySplits = ((String) properties.getString(URL)).split(PARAM_SEPARATOR);
             if (propertySplits.length > 0) {
                 for (int index = 1; index < propertySplits.length; index++) {
                     String[] kv = propertySplits[index].split(KV_SEPARATOR);
@@ -111,12 +105,12 @@ public class MessagingAccessPointAdapter {
         Class[] paramTypes = {Properties.class};
         Constructor constructor = serviceEndPointClass.getConstructor(paramTypes);
         assert constructor != null;
-        return (ServiceEndPoint)constructor.newInstance(properties);
+        return (ServiceEndPoint) constructor.newInstance(properties);
     }
 
     private static ServiceEndPoint createServiceEndPoint(Map<String, List<String>> url, KeyValue properties)
-        throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-        InstantiationException, IllegalAccessException {
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+            InstantiationException, IllegalAccessException {
         List<String> driver = url.get(SPI_NAME);
         List<String> urls = url.get(URL_NAME);
         Collections.shuffle(urls);
@@ -127,8 +121,8 @@ public class MessagingAccessPointAdapter {
     }
 
     public static ServiceEndPoint createServiceEndPoint(String url, KeyValue properties)
-        throws ClassNotFoundException, NoSuchMethodException, InstantiationException,
-        IllegalAccessException, InvocationTargetException {
+            throws ClassNotFoundException, NoSuchMethodException, InstantiationException,
+            IllegalAccessException, InvocationTargetException {
         Map<String, List<String>> driverUrl = parseURI(url);
         if (null == driverUrl || driverUrl.size() == 0) {
             throw new IllegalArgumentException("driver url parsed result.size ==0");

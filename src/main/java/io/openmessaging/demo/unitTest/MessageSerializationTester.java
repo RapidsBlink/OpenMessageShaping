@@ -2,7 +2,9 @@ package io.openmessaging.demo.unitTest;
 
 import io.openmessaging.Message;
 import io.openmessaging.MessageHeader;
-import io.openmessaging.demo.*;
+import io.openmessaging.demo.DefaultBytesMessage;
+import io.openmessaging.demo.MessageDeserialization;
+import io.openmessaging.demo.MessageSerialization;
 
 import java.util.logging.Logger;
 

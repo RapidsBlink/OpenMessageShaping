@@ -18,12 +18,29 @@ public class ProducerTester {
     static AtomicInteger state = new AtomicInteger(0);
     static String errorMessage = "";
 
+    public static void main(String[] args) throws Exception {
+        Thread[] ts = new Thread[Constants.PRO_NUM];
+        for (int i = 0; i < ts.length; i++) {
+            ts[i] = new ProducerTask(Constants.PRO_PRE + i);
+        }
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < ts.length; i++) {
+            ts[i].start();
+        }
+        for (int i = 0; i < ts.length; i++) {
+            ts[i].join();
+        }
+        long end = System.currentTimeMillis();
+        logger.info("Produce Finished, Cost {} ms", end - start);
+    }
+
     static class ProducerTask extends Thread {
         String label = Thread.currentThread().getName();
         Random random = new Random();
         Producer producer = null;
         int sendNum = 0;
         Map<String, Integer> offsets = new HashMap<>();
+
         public ProducerTask(String label) {
             this.label = label;
             init();
@@ -78,21 +95,5 @@ public class ProducerTester {
         }
 
 
-    }
-
-    public static void main(String[] args) throws Exception {
-        Thread[] ts = new Thread[Constants.PRO_NUM];
-        for (int i = 0; i < ts.length; i++) {
-            ts[i] = new ProducerTask(Constants.PRO_PRE + i);
-        }
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < ts.length; i++) {
-            ts[i].start();
-        }
-        for (int i = 0; i < ts.length; i++) {
-            ts[i].join();
-        }
-        long end = System.currentTimeMillis();
-        logger.info("Produce Finished, Cost {} ms", end - start);
     }
 }

@@ -20,12 +20,34 @@ public class ConsumerTester {
     static AtomicInteger state = new AtomicInteger(0);
     static String errorMessage = "";
 
+    public static void main(String[] args) throws Exception {
+        Thread[] ts = new Thread[Constants.CON_NUM];
+        for (int i = 0; i < ts.length; i++) {
+            ts[i] = new ConsumerTask(Constants.QUEUE_PRE + i,
+                    Collections.singletonList(Constants.TOPIC_PRE + i));
+        }
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < ts.length; i++) {
+            ts[i].start();
+        }
+        for (int i = 0; i < ts.length; i++) {
+            ts[i].join();
+        }
+        int pullNum = 0;
+        for (int i = 0; i < ts.length; i++) {
+            pullNum += ((ConsumerTask) ts[i]).getPullNum();
+        }
+        long end = System.currentTimeMillis();
+        logger.info("Consumer Finished, Cost {} ms, Num {}", end - start, pullNum);
+    }
+
     static class ConsumerTask extends Thread {
         String queue;
         List<String> topics;
         PullConsumer consumer;
         int pullNum;
         Map<String, Map<String, Integer>> offsets = new HashMap<>();
+
         public ConsumerTask(String queue, List<String> topics) {
             this.queue = queue;
             this.topics = topics;
@@ -49,10 +71,10 @@ public class ConsumerTester {
             }
             //init offsets
             offsets.put(queue, new HashMap<>());
-            for (String topic: topics) {
+            for (String topic : topics) {
                 offsets.put(topic, new HashMap<>());
             }
-            for (Map<String, Integer> map: offsets.values()) {
+            for (Map<String, Integer> map : offsets.values()) {
                 for (int i = 0; i < Constants.PRO_NUM; i++) {
                     map.put(Constants.PRO_PRE + i, 0);
                 }
@@ -82,7 +104,7 @@ public class ConsumerTester {
                     int offset = Integer.parseInt(body.substring(index + 1));
                     if (offset != offsets.get(queueOrTopic).get(producer)) {
                         logger.error("Offset not equal expected:{} actual:{} producer:{} queueOrTopic:{}",
-                            offsets.get(producer), offset, producer, queueOrTopic);
+                                offsets.get(producer), offset, producer, queueOrTopic);
                         break;
                     } else {
                         offsets.get(queueOrTopic).put(producer, offset + 1);
@@ -99,26 +121,5 @@ public class ConsumerTester {
             return pullNum;
         }
 
-    }
-
-    public static void main(String[] args) throws Exception {
-        Thread[] ts = new Thread[Constants.CON_NUM];
-        for (int i = 0; i < ts.length; i++) {
-            ts[i] = new ConsumerTask(Constants.QUEUE_PRE + i,
-                Collections.singletonList(Constants.TOPIC_PRE + i));
-        }
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < ts.length; i++) {
-            ts[i].start();
-        }
-        for (int i = 0; i < ts.length; i++) {
-            ts[i].join();
-        }
-        int pullNum = 0;
-        for (int i = 0; i < ts.length; i++) {
-            pullNum += ((ConsumerTask)ts[i]).getPullNum();
-        }
-        long end = System.currentTimeMillis();
-        logger.info("Consumer Finished, Cost {} ms, Num {}", end - start, pullNum);
     }
 }

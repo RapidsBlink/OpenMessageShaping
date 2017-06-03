@@ -29,7 +29,6 @@ package io.openmessaging;
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
- *
  * @version OMS 1.0
  * @since OMS 1.0
  */
@@ -77,7 +76,7 @@ public interface MessagingAccessPoint extends ServiceLifecycle {
     /**
      * Creates a new {@code PullConsumer} for the specified {@code MessagingAccessPoint} with some preset properties.
      *
-     * @param queueName the only attached queue for this {@code PullConsumer}
+     * @param queueName  the only attached queue for this {@code PullConsumer}
      * @param properties the preset properties
      * @return the created {@code PullConsumer}
      */
@@ -94,7 +93,7 @@ public interface MessagingAccessPoint extends ServiceLifecycle {
     /**
      * Creates a new {@code PartitionConsumer} for the specified {@code MessagingAccessPoint} with some preset properties.
      *
-     * @param queueName the only attached queue for this {@code PartitionConsumer}
+     * @param queueName  the only attached queue for this {@code PartitionConsumer}
      * @param properties the preset properties
      * @return the created consumer
      */

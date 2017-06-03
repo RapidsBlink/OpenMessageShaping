@@ -28,7 +28,6 @@ package io.openmessaging;
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
- *
  * @version OMS 1.0
  * @since OMS 1.0
  */
@@ -45,7 +44,7 @@ public interface Promise<V> {
      * to {@link #isCancelled} will always return {@code true} if this method returned {@code true}.
      *
      * @param mayInterruptIfRunning {@code true} if the thread executing this task should be interrupted; otherwise,
-     * in-progress tasks are allowed to complete
+     *                              in-progress tasks are allowed to complete
      * @return {@code false} if the task could not be cancelled, typically because it has already completed normally;
      * {@code true} otherwise
      */

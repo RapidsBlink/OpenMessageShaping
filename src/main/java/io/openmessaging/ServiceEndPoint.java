@@ -21,7 +21,6 @@ import io.openmessaging.observer.Observer;
 
 /**
  * @author vintagewang@apache.org
- *
  * @version OMS 1.0
  * @since OMS 1.0
  */
@@ -38,7 +37,7 @@ public interface ServiceEndPoint extends ServiceLifecycle {
      * Like {@link #publish(Object)} but specifying {@code properties}
      * that can be used to configure the service published
      *
-     * @param service the service to publish in serviceEndPoint
+     * @param service    the service to publish in serviceEndPoint
      * @param properties the service published properties
      */
 
@@ -55,9 +54,9 @@ public interface ServiceEndPoint extends ServiceLifecycle {
     /**
      * Like {@link #bind(Class)} but specifying {@code properties} that can be used to configure the service band
      *
-     * @param type service type to bind in serviceEndPoint
+     * @param type       service type to bind in serviceEndPoint
      * @param properties the service bind properties
-     * @param <T> service proxy object to bind
+     * @param <T>        service proxy object to bind
      * @return service proxy object to bind
      */
     <T> T bind(Class<T> type, KeyValue properties);
@@ -66,10 +65,10 @@ public interface ServiceEndPoint extends ServiceLifecycle {
      * Like {@link #bind(Class, KeyValue)} but specifying {@code serviceLoadBalance} that can be used to select
      * endPoint target
      *
-     * @param type service type to bind in serviceConsumer
-     * @param properties the service band properties
+     * @param type               service type to bind in serviceConsumer
+     * @param properties         the service band properties
      * @param serviceLoadBalance select endPoint target algorithm
-     * @param <T> service proxy object to bind
+     * @param <T>                service proxy object to bind
      * @return service proxy object to bind
      */
     <T> T bind(Class<T> type, KeyValue properties, ServiceLoadBalance serviceLoadBalance);

@@ -27,19 +27,18 @@ package io.openmessaging;
  * <p>
  * The {@code Message} is a lightweight entity that only contains the property related information of a specific message
  * object, and the {@code Message} is composed of the following parts:
- *
+ * <p>
  * <UL>
  * <LI>Header - All messages support the same set of header fields. Header fields contain values used by both
  * clients and providers to identify and route messages.
  * <LI>Properties - Each message contains a built-in facility for supporting application-defined property values.
  * Properties provide an efficient mechanism for supporting application-defined message filtering.
  * </UL>
- *
+ * <p>
  * The body part is placed in the implementation classes of {@code Message}.
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
- *
  * @version OMS 1.0
  * @since OMS 1.0
  */
@@ -62,7 +61,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code int} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putHeaders(String key, int value);
@@ -70,7 +69,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code long} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putHeaders(String key, long value);
@@ -78,7 +77,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code double} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putHeaders(String key, double value);
@@ -86,7 +85,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code String} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putHeaders(String key, String value);
@@ -94,7 +93,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code int} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putProperties(String key, int value);
@@ -102,7 +101,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code long} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putProperties(String key, long value);
@@ -110,7 +109,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code double} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putProperties(String key, double value);
@@ -118,7 +117,7 @@ public interface Message {
     /**
      * Puts a {@code String}-{@code String} {@code KeyValue} entry to he headers of a {@code Message}.
      *
-     * @param key  the key to be placed into the headers
+     * @param key   the key to be placed into the headers
      * @param value the value corresponding to <tt>key</tt>
      */
     Message putProperties(String key, String value);

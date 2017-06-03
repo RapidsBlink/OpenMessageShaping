@@ -26,7 +26,7 @@ import io.openmessaging.exception.OMSRuntimeException;
  * It provides various {@code send} methods to send a message to a specified destination.
  * A destination can be a {@link MessageHeader#TOPIC} or a {@link MessageHeader#QUEUE}.
  * <p>
- *
+ * <p>
  * {@link Producer#send(Message)} means send a message to destination synchronously,
  * the calling thread will block until the send request complete.
  * <p>
@@ -40,7 +40,6 @@ import io.openmessaging.exception.OMSRuntimeException;
  *
  * @author vintagewang@apache.org
  * @author yukon@apache.org
- *
  * @version OMS 1.0
  * @since OMS 1.0
  */
@@ -67,7 +66,7 @@ public interface Producer extends MessageFactory, ServiceLifecycle {
      * Sends a message to the specified destination synchronously, using the specified properties, the destination
      * should be preset to {@link MessageHeader}, other header fields as well.
      *
-     * @param message a message will be sent
+     * @param message    a message will be sent
      * @param properties the specified properties
      * @throws OMSRuntimeException if the {@code Producer} fails to send the message due to some internal error.
      */
@@ -94,7 +93,7 @@ public interface Producer extends MessageFactory, ServiceLifecycle {
      * The returned {@code Promise} will have the result once the operation completes, and the registered
      * {@code PromiseListener} will be notified, either because the operation was successful or because of an error.
      *
-     * @param message a message will be sent
+     * @param message    a message will be sent
      * @param properties the specified properties
      * @return the {@code Promise} of an asynchronous message send operation.
      * @see Promise
@@ -120,7 +119,7 @@ public interface Producer extends MessageFactory, ServiceLifecycle {
      * There is no {@code Promise} related or {@code RuntimeException} thrown. The calling thread doesn't
      * care about the send result and also have no context to get the result.
      *
-     * @param message a message will be sent
+     * @param message    a message will be sent
      * @param properties the specified properties
      */
     void sendOneway(Message message, KeyValue properties);

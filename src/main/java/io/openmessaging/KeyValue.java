@@ -18,6 +18,7 @@
 package io.openmessaging;
 
 import io.openmessaging.exception.OMSRuntimeException;
+
 import java.util.Set;
 
 /**
@@ -37,7 +38,7 @@ public interface KeyValue {
     /**
      * Inserts or replaces {@code int} value for the specified key.
      *
-     * @param key the key to be placed into this {@code KeyValue} object
+     * @param key   the key to be placed into this {@code KeyValue} object
      * @param value the value corresponding to <tt>key</tt>
      */
     KeyValue put(String key, int value);
@@ -45,7 +46,7 @@ public interface KeyValue {
     /**
      * Inserts or replaces {@code long} value for the specified key.
      *
-     * @param key the key to be placed into this {@code KeyValue} object
+     * @param key   the key to be placed into this {@code KeyValue} object
      * @param value the value corresponding to <tt>key</tt>
      */
     KeyValue put(String key, long value);
@@ -53,7 +54,7 @@ public interface KeyValue {
     /**
      * Inserts or replaces {@code double} value for the specified key.
      *
-     * @param key the key to be placed into this {@code KeyValue} object
+     * @param key   the key to be placed into this {@code KeyValue} object
      * @param value the value corresponding to <tt>key</tt>
      */
     KeyValue put(String key, double value);
@@ -61,7 +62,7 @@ public interface KeyValue {
     /**
      * Inserts or replaces {@code String} value for the specified key.
      *
-     * @param key the key to be placed into this {@code KeyValue} object
+     * @param key   the key to be placed into this {@code KeyValue} object
      * @param value the value corresponding to <tt>key</tt>
      */
     KeyValue put(String key, String value);

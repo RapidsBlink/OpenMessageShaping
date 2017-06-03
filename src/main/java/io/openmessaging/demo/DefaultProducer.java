@@ -2,27 +2,19 @@ package io.openmessaging.demo;
 
 import io.openmessaging.*;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import static io.openmessaging.demo.Constants.MAX_MESSAGE_SIZE;
-
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private KeyValue properties;
 
-    private MessageSerialization messageSerialization = new MessageSerialization();
-    private ByteBuffer byteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
-    private DataDumper dataDumper = null;
+    private DataDump dataDump;
+    private MessageSerialization messageSerialization;
 
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
-        try {
-            this.dataDumper = new DataDumper(properties.getString("STORE_PATH"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.dataDump = new DataDump(properties.getString("STORE_PATH"));
+        this.messageSerialization = new MessageSerialization();
     }
+
 
     @Override
     public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
@@ -51,17 +43,14 @@ public class DefaultProducer implements Producer {
 
     @Override
     public void send(Message message) {
+        if (message == null) throw new ClientOMSException("Message should not be null");
         String topic = message.headers().getString(MessageHeader.TOPIC);
         String queue = message.headers().getString(MessageHeader.QUEUE);
-
-        byteBuffer.clear();
-        messageSerialization.serialize((DefaultBytesMessage) message, byteBuffer);
-        byteBuffer.flip();
-        try {
-            dataDumper.writeToFile(topic != null ? topic : queue, byteBuffer);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if ((topic == null && queue == null) || (topic != null && queue != null)) {
+            throw new ClientOMSException(String.format("Queue:%s Topic:%s should put one and only one", true, queue));
         }
+        byte[] messageBinary = messageSerialization.serialize((DefaultBytesMessage) message);
+        dataDump.writeToFile(topic != null ? topic : queue, messageBinary);
     }
 
     @Override
@@ -101,10 +90,6 @@ public class DefaultProducer implements Producer {
 
     @Override
     public void flush() {
-        try {
-            dataDumper.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        dataDump.close();
     }
 }
