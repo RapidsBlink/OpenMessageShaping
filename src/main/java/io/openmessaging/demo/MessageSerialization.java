@@ -4,13 +4,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.openmessaging.demo.Constants.MAX_MESSAGE_SIZE;
+
 /**
  * can only be used by a single object
  * otherwise incurs failures
  * Created by will on 27/5/2017.
  */
 public class MessageSerialization {
-    private static final int MAX_MESSAGE_SIZE = 1024 * 260;
     private final ByteBuffer messageByteBuffer;
 
     private final List<YchePair<String, Integer>> integerList = new ArrayList<>();
@@ -22,10 +23,10 @@ public class MessageSerialization {
         messageByteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
     }
 
-    private void putStringToByteBuffer(String myString, ByteBuffer byteBuffer) {
+    private void putStringToByteBuffer(String myString) {
         byte[] myBytes = myString.getBytes();
-        byteBuffer.putInt(myBytes.length);
-        byteBuffer.put(myBytes);
+        messageByteBuffer.putInt(myBytes.length);
+        messageByteBuffer.put(myBytes);
     }
 
     private void serializeHashMapIntoKeyValueBuffer(DefaultKeyValue kv) {
@@ -55,28 +56,28 @@ public class MessageSerialization {
 
         // 2nd: pair info
         integerList.forEach((strIntegerPair) -> {
-            putStringToByteBuffer(strIntegerPair.key, messageByteBuffer);
+            putStringToByteBuffer(strIntegerPair.key);
             messageByteBuffer.putInt(strIntegerPair.val);
         });
 
         longList.forEach((strLongPair) -> {
-            putStringToByteBuffer(strLongPair.key, messageByteBuffer);
+            putStringToByteBuffer(strLongPair.key);
             messageByteBuffer.putLong(strLongPair.val);
         });
 
         doubleList.forEach((strDoublePair) -> {
-            putStringToByteBuffer(strDoublePair.key, messageByteBuffer);
+            putStringToByteBuffer(strDoublePair.key);
             messageByteBuffer.putDouble(strDoublePair.val);
         });
 
         stringList.forEach((strStringPair) -> {
-            putStringToByteBuffer(strStringPair.key, messageByteBuffer);
-            putStringToByteBuffer(strStringPair.val, messageByteBuffer);
+            putStringToByteBuffer(strStringPair.key);
+            putStringToByteBuffer(strStringPair.val);
         });
     }
 
     private void serializeDetail(DefaultBytesMessage message) {
-        // write to buffer sequentially
+        // clear states
         messageByteBuffer.clear();
 
         // 1st: write body

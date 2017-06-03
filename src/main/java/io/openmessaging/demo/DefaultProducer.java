@@ -5,12 +5,14 @@ import io.openmessaging.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static io.openmessaging.demo.Constants.MAX_MESSAGE_SIZE;
+
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private KeyValue properties;
 
     private MessageSerialization messageSerialization = new MessageSerialization();
-    private ByteBuffer byteBuffer = ByteBuffer.allocate(260 * 1024);
+    private ByteBuffer byteBuffer = ByteBuffer.allocate(MAX_MESSAGE_SIZE);
     private DataDumper dataDumper = null;
 
     public DefaultProducer(KeyValue properties) {
@@ -49,12 +51,8 @@ public class DefaultProducer implements Producer {
 
     @Override
     public void send(Message message) {
-        if (message == null) throw new ClientOMSException("Message should not be null");
         String topic = message.headers().getString(MessageHeader.TOPIC);
         String queue = message.headers().getString(MessageHeader.QUEUE);
-        if ((topic == null && queue == null) || (topic != null && queue != null)) {
-            throw new ClientOMSException(String.format("Queue:%s Topic:%s should put one and only one", true, queue));
-        }
 
         byteBuffer.clear();
         messageSerialization.serialize((DefaultBytesMessage) message, byteBuffer);

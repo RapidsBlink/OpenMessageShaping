@@ -3,14 +3,13 @@ package io.openmessaging.demo;
 import io.openmessaging.KeyValue;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+
+import static io.openmessaging.demo.Constants.MAX_MESSAGE_SIZE;
 
 /**
  * Created by yche on 5/27/17.
  */
 public class MessageDeserialization {
-    private static final int MAX_MESSAGE_SIZE = 1024 * 260;
-
     private final ByteBuffer messageByteBuffer;
 
     public MessageDeserialization() {
@@ -60,10 +59,7 @@ public class MessageDeserialization {
         return defaultKeyValue;
     }
 
-    public DefaultBytesMessage deserialize(byte[] byteBuffer, int offset, int length) {
-        messageByteBuffer.clear();
-        messageByteBuffer.put(byteBuffer, offset, length);
-
+    private DefaultBytesMessage deserializeDetail() {
         messageByteBuffer.flip();
         int lenBytes = messageByteBuffer.getInt();
         byte[] body = new byte[lenBytes];
@@ -73,6 +69,12 @@ public class MessageDeserialization {
         KeyValue propertyKeyValue = deSerializeHashMap();
 
         return new DefaultBytesMessage(body, headerKeyValue, propertyKeyValue);
+    }
+
+    public DefaultBytesMessage deserialize(byte[] byteBuffer, int offset, int length) {
+        messageByteBuffer.clear();
+        messageByteBuffer.put(byteBuffer, offset, length);
+        return deserializeDetail();
     }
 
     public DefaultBytesMessage deserialize(byte[] byteMessage) {
@@ -82,15 +84,6 @@ public class MessageDeserialization {
     public DefaultBytesMessage deserialize(ByteBuffer byteMessage) {
         messageByteBuffer.clear();
         messageByteBuffer.put(byteMessage);
-
-        messageByteBuffer.flip();
-        int lenBytes = messageByteBuffer.getInt();
-        byte[] body = new byte[lenBytes];
-        messageByteBuffer.get(body);
-
-        KeyValue headerKeyValue = deSerializeHashMap();
-        KeyValue propertyKeyValue = deSerializeHashMap();
-
-        return new DefaultBytesMessage(body, headerKeyValue, propertyKeyValue);
+        return deserializeDetail();
     }
 }
