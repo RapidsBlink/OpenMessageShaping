@@ -1,6 +1,7 @@
 package io.openmessaging.demo;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,8 +26,8 @@ public class DataDump {
 
     private final String rootPath;
     private final Base64.Encoder base64Encoder;
-    private HashMap<String, BufferedWriter> myFileName;
-
+    private HashMap<String, GZIPOutputStream> myFileName;
+    private ByteBuffer integerToBytes = ByteBuffer.allocate(4);
 
     public DataDump(String folderRootPath) {
         rootPath = folderRootPath;
@@ -38,10 +39,10 @@ public class DataDump {
         if (!myFileName.containsKey(topicName)) {
             createFile(topicName);
         }
-        BufferedWriter bw = myFileName.get(topicName);
+        GZIPOutputStream bw = myFileName.get(topicName);
         try {
-            bw.write(base64Encoder.encodeToString(data));
-            bw.newLine();
+            integerToBytes.clear();
+            bw.write(integerToBytes.putInt(data.length).array());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -59,10 +60,8 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-            MyGZIPOutputStream zip = new MyGZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
-            zip.setLevel(Deflater.BEST_COMPRESSION);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
-            myFileName.put(folderName, writer);
+            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(rootPath + File.separator + folderName + File.separator + fileName), 1 * 1024 * 1024);
+            myFileName.put(folderName, zip);
         } catch (IOException e) {
             e.printStackTrace();
         }
