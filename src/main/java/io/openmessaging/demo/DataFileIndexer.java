@@ -9,11 +9,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DataFileIndexer implements Serializable {
     public int INIT_MAX_TOPIC_NUMBER = 200;
-    public int TOPIC_CHUNK_SIZE = 100 * 1024 * 1024; // 100 MB
+    public int TOPIC_CHUNK_SIZE = 96 * 1024 * 1024; // 96 MB
     // just for testing
     //public int TOPIC_CHUNK_SIZE = 500 * 1024 * 1024; // 400 MB
 
-    public int MINI_CHUNK_SIZE = 8 * 1024 * 1024; // 4MB
+    public int MINI_CHUNK_SIZE = 16 * 1024 * 1024; // 16MB
     public int MAX_MINI_CHUNK_NUMBER_PER_TOPIC = TOPIC_CHUNK_SIZE / MINI_CHUNK_SIZE; //20
 
     // for quickly look topic chunk idx from topic name, used in production phase

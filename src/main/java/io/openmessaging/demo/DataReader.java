@@ -12,6 +12,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
+import java.util.zip.DataFormatException;
 
 /**
  * Created by will on 31/5/2017.
@@ -32,6 +33,8 @@ public class DataReader {
     static ConcurrentHashMap<String, Integer> topicBuff = new ConcurrentHashMap<>();
     public static HashMap<String, AtomicInteger> topicWaiterNumber = new HashMap<>();
     public static ReentrantLock topicWaiterNumberLock = new ReentrantLock();
+
+    private static ByteBuffer buffBeforeCompressed;
 
     private static MappedByteBuffer[] bbuf = new MappedByteBuffer[BUFFER_NUMBER];
     private static AtomicInteger[] bbufFinishedTimes = new AtomicInteger[BUFFER_NUMBER];
@@ -59,7 +62,7 @@ public class DataReader {
                 ObjectInputStream ois = new ObjectInputStream(
                         new FileInputStream(rootFilePath + File.separator + "index.bin"));
                 dataFileIndexer = (DataFileIndexer) ois.readObject();
-
+                buffBeforeCompressed = ByteBuffer.allocate(dataFileIndexer.MINI_CHUNK_SIZE);
                 //currentChunkNum.set(dataFileIndexer.currentTopicNumber - 1);
                 currentChunkNum.set(0);
 
@@ -91,17 +94,31 @@ public class DataReader {
         topicMessageList[topicBuffNumber].clear();
 
         MappedByteBuffer buf = bbuf[topicBuffNumber];
+        ByteBuffer bufDecompressed = null;
+
         for (int miniChunkNum = 0; miniChunkNum <= dataFileIndexer.topicMiniChunkCurrMaxIndex[globalTopicChunkNumber]; miniChunkNum++) {
             int currentOffset = 0;
             int miniChunkOffset = dataFileIndexer.topicMiniChunkStartOffset[globalTopicChunkNumber][miniChunkNum];
             buf.position(miniChunkOffset);
+            buffBeforeCompressed.clear();
+            for(int idx = 0 ; idx < dataFileIndexer.topicMiniChunkLengths[globalTopicChunkNumber][miniChunkNum]; idx++){
+                buffBeforeCompressed.put(buf.get());
+            }
+            buffBeforeCompressed.flip();
+            //bufDecompressed = buffBeforeCompressed;
+            try {
+                bufDecompressed = ByteBuffer.wrap(CompressionUtils.decompress(buffBeforeCompressed.array(), 0, buffBeforeCompressed.limit()));
+
+            } catch (IOException | DataFormatException e) {
+                e.printStackTrace();
+            }
             while (true) {
-                if (currentOffset >= dataFileIndexer.topicMiniChunkLengths[globalTopicChunkNumber][miniChunkNum])
+                if (currentOffset >= bufDecompressed.limit())
                     break;
-                int dataLength = buf.getInt();
+                int dataLength = bufDecompressed.getInt();
                 messageBinary.clear();
                 for (int idx = 0; idx < dataLength; idx++) {
-                    messageBinary.put(buf.get());
+                    messageBinary.put(bufDecompressed.get());
                 }
                 messageBinary.flip();
                 topicMessageList[topicBuffNumber].add(messageDeserialization.deserialize(messageBinary));

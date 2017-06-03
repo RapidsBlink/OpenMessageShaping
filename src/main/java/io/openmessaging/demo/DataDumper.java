@@ -127,19 +127,47 @@ public class DataDumper {
         return offset;
     }
 
-    private void assignNextMiniChunk(int topicNumber) throws IOException {
+    private int alignPageOffset(int topicNumber, int miniChunkIndex){
+        int lastMiniChunkStartOffset = 0;
+        int lastMiniChunkLength = 0;
+        if(miniChunkIndex > 0) {
+            lastMiniChunkStartOffset = dataFileIndexer.topicMiniChunkStartOffset[topicNumber][miniChunkIndex - 1];
+            lastMiniChunkLength = dataFileIndexer.topicMiniChunkLengths[topicNumber][miniChunkIndex - 1];
+        }
+        int myStartOffset = lastMiniChunkStartOffset + lastMiniChunkLength;
+        if((myStartOffset % 4096) != 0){
+           myStartOffset =  (myStartOffset/4096+1) * 4096;
+        }
+        return myStartOffset;
+    }
+
+    private void passDataToOS(int topicNumber){
+        try {
+            byte[] compressedData = CompressionUtils.compress(topicWriteBuff[topicNumber], 0, topicWriteBuffLength[topicNumber]);
+
+            int currentTopicMiniChunkIndex = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
+            int currentTopicMiniChunkStartOffset = alignPageOffset(topicNumber, currentTopicMiniChunkIndex);
+            long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + currentTopicMiniChunkStartOffset;
+            topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, compressedData.length);
+            topicMappedBuff[topicNumber].put(compressedData);
+
+            dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkIndex] = compressedData.length;
+            dataFileIndexer.topicMiniChunkStartOffset[topicNumber][currentTopicMiniChunkIndex] = currentTopicMiniChunkStartOffset;
+
+            unmap(topicMappedBuff[topicNumber]);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void assignNextMiniChunk(int topicNumber) {
         if (topicWriteBuff[topicNumber] != null) {
             // sync: which is optional, async also keeps correctness
             // need to make sure no other threads use this mapped area, busy waiting here
             while (mmapedAreaUserNumArr[topicNumber].get() >= 0) {
                 if (mmapedAreaUserNumArr[topicNumber].get() == 0) {
-                    int currentTopicMiniChunkIndex = dataFileIndexer.topicMiniChunkCurrMaxIndex[topicNumber];
-                    long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[topicNumber] + MINI_CHUNK_SIZE * currentTopicMiniChunkIndex;
-                    dataFileIndexer.topicMiniChunkLengths[topicNumber][currentTopicMiniChunkIndex] = topicWriteBuffLength[topicNumber];
-                    dataFileIndexer.topicMiniChunkStartOffset[topicNumber][currentTopicMiniChunkIndex] = MINI_CHUNK_SIZE * currentTopicMiniChunkIndex;
-                    topicMappedBuff[topicNumber] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
-                    topicMappedBuff[topicNumber].put(topicWriteBuff[topicNumber]);
-                    unmap(topicMappedBuff[topicNumber]);
+                    passDataToOS(topicNumber);
                     break;
                 }
             }
@@ -174,14 +202,8 @@ public class DataDumper {
         int finished = numberOfFinished.incrementAndGet();
         if (finished == numberOfProducer.get()) {
             for (int i = 0; i < dataFileIndexer.INIT_MAX_TOPIC_NUMBER; i++) {
-                if (topicWriteBuff[i] != null) {
-                    int currentTopicMiniChunkIndex = dataFileIndexer.topicMiniChunkCurrMaxIndex[i];
-                    long miniChunkGlobalOffset = dataFileIndexer.topicOffsets[i] + MINI_CHUNK_SIZE * currentTopicMiniChunkIndex;
-                    dataFileIndexer.topicMiniChunkLengths[i][currentTopicMiniChunkIndex] = topicWriteBuffLength[i];
-                    dataFileIndexer.topicMiniChunkStartOffset[i][currentTopicMiniChunkIndex] = MINI_CHUNK_SIZE * currentTopicMiniChunkIndex;
-                    topicMappedBuff[i] = dataFileChannel.map(FileChannel.MapMode.READ_WRITE, miniChunkGlobalOffset, MINI_CHUNK_SIZE);
-                    topicMappedBuff[i].put(topicWriteBuff[i]);
-                    unmap(topicMappedBuff[i]);
+                if (topicWriteBuff[i] != null && dataFileIndexer.topicMiniChunkCurrMaxIndex[i] >= 0) {
+                    passDataToOS(i);
                 }
             }
 
