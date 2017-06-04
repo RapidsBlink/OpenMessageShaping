@@ -5,19 +5,12 @@ import io.openmessaging.KeyValue;
 import io.openmessaging.Message;
 
 public class DefaultBytesMessage implements BytesMessage {
-
     private KeyValue headers = new DefaultKeyValue();
     private KeyValue properties = new DefaultKeyValue();
     private String bodyString;
 
     public DefaultBytesMessage(byte[] body) {
         this.bodyString = new String(body);
-    }
-
-    public DefaultBytesMessage(String bodyString, KeyValue headers, KeyValue properties) {
-        this.bodyString = bodyString;
-        this.headers = headers;
-        this.properties = properties;
     }
 
     @Override

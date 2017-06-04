@@ -7,8 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DefaultKeyValue implements KeyValue {
-
-    public final Map<String, String> kvs = new HashMap<>();
+    final Map<String, String> kvs = new HashMap<>();
 
     @Override
     public KeyValue put(String key, int value) {
@@ -36,17 +35,17 @@ public class DefaultKeyValue implements KeyValue {
 
     @Override
     public int getInt(String key) {
-        return (Integer) Integer.valueOf(kvs.getOrDefault(key, "0"));
+        return Integer.valueOf(kvs.getOrDefault(key, "0"));
     }
 
     @Override
     public long getLong(String key) {
-        return (Long) Long.valueOf(kvs.getOrDefault(key, "0"));
+        return Long.valueOf(kvs.getOrDefault(key, "0"));
     }
 
     @Override
     public double getDouble(String key) {
-        return (Double) Double.valueOf(kvs.getOrDefault(key, "0.0"));
+        return Double.valueOf(kvs.getOrDefault(key, "0.0"));
     }
 
     @Override
