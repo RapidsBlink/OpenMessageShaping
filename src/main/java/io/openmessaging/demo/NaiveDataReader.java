@@ -9,8 +9,6 @@ import java.util.zip.GZIPOutputStream;
  * Created by yche on 5/27/17.
  */
 public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
-    private final MessageDeserialization messageDeserialization;
-    private final Base64.Decoder baseDec;
     private final String storePath;
 
     // 1st-level all folders
@@ -28,8 +26,6 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     public NaiveDataReader(String storePath) {
         this.storePath = storePath;
-        this.messageDeserialization = new MessageDeserialization();
-        this.baseDec = Base64.getDecoder();
     }
 
     private void fetchNextFolder() {
@@ -109,7 +105,7 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     @Override
     public DefaultBytesMessage next() {
-        DefaultBytesMessage message = messageDeserialization.deserialize(baseDec.decode(tmpBinString.getBytes()));
+        DefaultBytesMessage message = DefaultBytesMessage.valueOf(tmpBinString);
         try {
             nextAndUpdateIteratorStates();
 

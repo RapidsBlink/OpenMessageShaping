@@ -7,12 +7,12 @@ public class DefaultProducer implements Producer {
     private KeyValue properties;
 
     private DataDump dataDump;
-    private MessageSerialization messageSerialization;
+//    private MessageSerialization messageSerialization;
 
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
         this.dataDump = new DataDump(properties.getString("STORE_PATH"));
-        this.messageSerialization = new MessageSerialization();
+//        this.messageSerialization = new MessageSerialization();
     }
 
 
@@ -49,8 +49,7 @@ public class DefaultProducer implements Producer {
         if ((topic == null && queue == null) || (topic != null && queue != null)) {
             throw new ClientOMSException(String.format("Queue:%s Topic:%s should put one and only one", true, queue));
         }
-        byte[] messageBinary = messageSerialization.serialize((DefaultBytesMessage) message);
-        dataDump.writeToFile(topic != null ? topic : queue, messageBinary);
+        dataDump.writeToFile(topic != null ? topic : queue, (DefaultBytesMessage) message);
     }
 
     @Override

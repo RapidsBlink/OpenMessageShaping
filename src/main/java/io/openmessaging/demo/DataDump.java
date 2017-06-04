@@ -24,23 +24,21 @@ public class DataDump {
     }
 
     private final String rootPath;
-    private final Base64.Encoder base64Encoder;
     private HashMap<String, BufferedWriter> myFileName;
 
 
     public DataDump(String folderRootPath) {
         rootPath = folderRootPath;
         myFileName = new HashMap<>();
-        base64Encoder = Base64.getEncoder();
     }
 
-    public void writeToFile(String topicName, byte[] data) {
+    public void writeToFile(String topicName, DefaultBytesMessage message){
         if (!myFileName.containsKey(topicName)) {
             createFile(topicName);
         }
         BufferedWriter bw = myFileName.get(topicName);
         try {
-            bw.write(base64Encoder.encodeToString(data));
+            bw.write(message.toString());
             bw.newLine();
         } catch (IOException e) {
             e.printStackTrace();

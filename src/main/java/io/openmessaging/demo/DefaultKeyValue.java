@@ -8,23 +8,23 @@ import java.util.Set;
 
 public class DefaultKeyValue implements KeyValue {
 
-    public final Map<String, Object> kvs = new HashMap<>();
+    public final Map<String, String> kvs = new HashMap<>();
 
     @Override
     public KeyValue put(String key, int value) {
-        kvs.put(key, value);
+        kvs.put(key, Integer.toString(value));
         return this;
     }
 
     @Override
     public KeyValue put(String key, long value) {
-        kvs.put(key, value);
+        kvs.put(key, Long.toString(value));
         return this;
     }
 
     @Override
     public KeyValue put(String key, double value) {
-        kvs.put(key, value);
+        kvs.put(key, Double.toString(value));
         return this;
     }
 
@@ -36,22 +36,22 @@ public class DefaultKeyValue implements KeyValue {
 
     @Override
     public int getInt(String key) {
-        return (Integer) kvs.getOrDefault(key, 0);
+        return (Integer) Integer.valueOf(kvs.getOrDefault(key, "0"));
     }
 
     @Override
     public long getLong(String key) {
-        return (Long) kvs.getOrDefault(key, 0L);
+        return (Long) Long.valueOf(kvs.getOrDefault(key, "0"));
     }
 
     @Override
     public double getDouble(String key) {
-        return (Double) kvs.getOrDefault(key, 0.0d);
+        return (Double) Double.valueOf(kvs.getOrDefault(key, "0.0"));
     }
 
     @Override
     public String getString(String key) {
-        return (String) kvs.getOrDefault(key, null);
+        return kvs.getOrDefault(key, null);
     }
 
     @Override
