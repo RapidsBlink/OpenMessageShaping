@@ -1,13 +1,12 @@
 package io.openmessaging.demo;
 
+import org.iq80.snappy.SnappyFramedOutputStream;
+
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by will on 25/5/2017.
@@ -51,8 +50,9 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-            DeflaterOutputStream zip = new DeflaterOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)),
-                    new Deflater(3));
+
+            SnappyFramedOutputStream zip = new SnappyFramedOutputStream(new FileOutputStream(
+                    new File(rootPath + File.separator + folderName + File.separator + fileName)));
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
             myFileName.put(folderName, writer);
         } catch (IOException e) {
