@@ -15,15 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
 import static java.lang.String.format;
-import static org.iq80.snappy.SnappyOutputStream.MAX_BLOCK_SIZE;
-import static org.iq80.snappy.SnappyOutputStream.STREAM_HEADER;
 
 /**
  * This class implements an input stream for reading Snappy compressed data
@@ -62,7 +60,7 @@ public class SnappyInputStream
     public SnappyInputStream(InputStream in, boolean verifyChecksums)
             throws IOException
     {
-        super(in, MAX_BLOCK_SIZE, HEADER_LENGTH, verifyChecksums, STREAM_HEADER);
+        super(in, SnappyOutputStream.MAX_BLOCK_SIZE, HEADER_LENGTH, verifyChecksums, SnappyOutputStream.STREAM_HEADER);
     }
 
     @Override
@@ -84,7 +82,7 @@ public class SnappyInputStream
                 action = FrameAction.UNCOMPRESS;
                 break;
             case 's':
-                if (!Arrays.equals(STREAM_HEADER, frameHeader)) {
+                if (!Arrays.equals(SnappyOutputStream.STREAM_HEADER, frameHeader)) {
                     throw new IOException(format("invalid compressed flag in header: 0x%02x", x));
                 }
                 action = FrameAction.SKIP;
@@ -94,7 +92,7 @@ public class SnappyInputStream
                 throw new IOException(format("invalid compressed flag in header: 0x%02x", x));
         }
 
-        if (((length <= 0) || (length > MAX_BLOCK_SIZE)) && action != FrameAction.SKIP) {
+        if (((length <= 0) || (length > SnappyOutputStream.MAX_BLOCK_SIZE)) && action != FrameAction.SKIP) {
             throw new IOException("invalid block size in header: " + length);
         }
 

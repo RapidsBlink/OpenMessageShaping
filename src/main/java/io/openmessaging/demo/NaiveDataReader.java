@@ -1,6 +1,6 @@
 package io.openmessaging.demo;
 
-import org.iq80.snappy.SnappyFramedInputStream;
+import io.openmessaging.demo.snappy.SnappyFramedInputStream;
 
 import java.io.*;
 import java.util.ArrayList;

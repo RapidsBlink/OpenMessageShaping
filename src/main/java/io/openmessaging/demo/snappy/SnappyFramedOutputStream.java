@@ -15,13 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
-import static org.iq80.snappy.SnappyFramed.*;
-import static org.iq80.snappy.SnappyInternalUtils.checkArgument;
 
 /**
  * Implements the <a href="http://snappy.googlecode.com/svn/trunk/framing_format.txt" >x-snappy-framed</a> as an {@link OutputStream}.
@@ -51,14 +48,14 @@ public final class SnappyFramedOutputStream
             throws IOException
     {
         super(out, blockSize, minCompressionRatio);
-        checkArgument(blockSize > 0 && blockSize <= MAX_BLOCK_SIZE, "blockSize must be in (0, 65536]", blockSize);
+        SnappyInternalUtils.checkArgument(blockSize > 0 && blockSize <= MAX_BLOCK_SIZE, "blockSize must be in (0, 65536]", blockSize);
     }
 
     @Override
     protected void writeHeader(OutputStream out)
             throws IOException
     {
-        out.write(HEADER_BYTES);
+        out.write(SnappyFramed.HEADER_BYTES);
     }
 
     /**
@@ -71,7 +68,7 @@ public final class SnappyFramedOutputStream
     protected void writeBlock(OutputStream out, byte[] data, int offset, int length, boolean compressed, int crc32c)
             throws IOException
     {
-        out.write(compressed ? COMPRESSED_DATA_FLAG : UNCOMPRESSED_DATA_FLAG);
+        out.write(compressed ? SnappyFramed.COMPRESSED_DATA_FLAG : SnappyFramed.UNCOMPRESSED_DATA_FLAG);
 
         // the length written out to the header is both the checksum and the
         // frame

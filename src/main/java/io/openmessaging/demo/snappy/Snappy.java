@@ -15,21 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
-import static org.iq80.snappy.SnappyFramed.HEADER_BYTES;
-import static org.iq80.snappy.SnappyInternalUtils.checkArgument;
-import static org.iq80.snappy.SnappyInternalUtils.checkNotNull;
-import static org.iq80.snappy.SnappyOutputStream.STREAM_HEADER;
-
 public final class Snappy
 {
 
-    private static final int MAX_HEADER_LENGTH = Math.max(STREAM_HEADER.length, HEADER_BYTES.length);
+    private static final int MAX_HEADER_LENGTH = Math.max(SnappyOutputStream.STREAM_HEADER.length, SnappyFramed.HEADER_BYTES.length);
 
     private Snappy()
     {
@@ -50,8 +45,8 @@ public final class Snappy
     public static InputStream determineSnappyInputStream(InputStream source, boolean verifyChecksums)
             throws IOException
     {
-        checkNotNull(source, "source is null");
-        checkArgument(source.markSupported(), "source does not support mark/reset");
+        SnappyInternalUtils.checkNotNull(source, "source is null");
+        SnappyInternalUtils.checkArgument(source.markSupported(), "source does not support mark/reset");
 
         // read the header and then reset to start of stream
         source.mark(MAX_HEADER_LENGTH);
@@ -59,16 +54,16 @@ public final class Snappy
         int read = SnappyInternalUtils.readBytes(source, buffer, 0, MAX_HEADER_LENGTH);
         source.reset();
 
-        if (read != STREAM_HEADER.length || read != HEADER_BYTES.length) {
+        if (read != SnappyOutputStream.STREAM_HEADER.length || read != SnappyFramed.HEADER_BYTES.length) {
             throw new IllegalArgumentException("invalid header");
         }
 
-        if (buffer[0] == HEADER_BYTES[0]) {
-            checkArgument(Arrays.equals(Arrays.copyOf(buffer, HEADER_BYTES.length), HEADER_BYTES), "invalid header");
+        if (buffer[0] == SnappyFramed.HEADER_BYTES[0]) {
+            SnappyInternalUtils.checkArgument(Arrays.equals(Arrays.copyOf(buffer, SnappyFramed.HEADER_BYTES.length), SnappyFramed.HEADER_BYTES), "invalid header");
             return new SnappyFramedInputStream(source, verifyChecksums);
         }
         else {
-            checkArgument(Arrays.equals(Arrays.copyOf(buffer, STREAM_HEADER.length), STREAM_HEADER), "invalid header");
+            SnappyInternalUtils.checkArgument(Arrays.equals(Arrays.copyOf(buffer, SnappyOutputStream.STREAM_HEADER.length), SnappyOutputStream.STREAM_HEADER), "invalid header");
             return new SnappyInputStream(source, verifyChecksums);
         }
     }

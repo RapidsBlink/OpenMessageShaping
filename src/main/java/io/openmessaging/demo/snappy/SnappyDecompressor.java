@@ -15,9 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
-
-import static org.iq80.snappy.SnappyInternalUtils.*;
+package io.openmessaging.demo.snappy;
 
 final class SnappyDecompressor
 {
@@ -67,7 +65,7 @@ final class SnappyDecompressor
         compressedOffset += varInt[1];
         compressedSize -= varInt[1];
 
-        checkArgument(expectedLength <= uncompressed.length - uncompressedOffset,
+        SnappyInternalUtils.checkArgument(expectedLength <= uncompressed.length - uncompressedOffset,
                 "Uncompressed length %s must be less than %s", expectedLength, uncompressed.length - uncompressedOffset);
 
         // Process the entire input
@@ -102,8 +100,8 @@ final class SnappyDecompressor
         int ipIndex = inputOffset;
 
         while (ipIndex < ipLimit - 5) {
-            int opCode = loadByte(input, ipIndex++);
-            int entry = lookupShort(opLookupTable, opCode);
+            int opCode = SnappyInternalUtils.loadByte(input, ipIndex++);
+            int entry = SnappyInternalUtils.lookupShort(opLookupTable, opCode);
             int trailerBytes = entry >>> 11;
             int trailer = readTrailer(input, ipIndex, trailerBytes);
 
@@ -165,8 +163,8 @@ final class SnappyDecompressor
 
                     if (length <= 16 && copyOffset >= 8 && spaceLeft >= 16) {
                         // Fast path, used for the majority (70-80%) of dynamic invocations.
-                        copyLong(output, srcIndex, output, opIndex);
-                        copyLong(output, srcIndex + 8, output, opIndex + 8);
+                        SnappyInternalUtils.copyLong(output, srcIndex, output, opIndex);
+                        SnappyInternalUtils.copyLong(output, srcIndex + 8, output, opIndex + 8);
                     }
                     else if (spaceLeft >= length + MAX_INCREMENT_COPY_OVERFLOW) {
                         incrementalCopyFastPath(output, srcIndex, opIndex, length);
@@ -203,8 +201,8 @@ final class SnappyDecompressor
             throws CorruptionException
     {
         // read the op code
-        int opCode = loadByte(input, ipIndex++);
-        int entry = lookupShort(opLookupTable, opCode);
+        int opCode = SnappyInternalUtils.loadByte(input, ipIndex++);
+        int entry = SnappyInternalUtils.lookupShort(opLookupTable, opCode);
         int trailerBytes = entry >>> 11;
         //
         // Key difference here
@@ -249,8 +247,8 @@ final class SnappyDecompressor
 
                 if (length <= 16 && copyOffset >= 8 && spaceLeft >= 16) {
                     // Fast path, used for the majority (70-80%) of dynamic invocations.
-                    copyLong(output, srcIndex, output, opIndex);
-                    copyLong(output, srcIndex + 8, output, opIndex + 8);
+                    SnappyInternalUtils.copyLong(output, srcIndex, output, opIndex);
+                    SnappyInternalUtils.copyLong(output, srcIndex + 8, output, opIndex + 8);
                 }
                 else if (spaceLeft >= length + MAX_INCREMENT_COPY_OVERFLOW) {
                     incrementalCopyFastPath(output, srcIndex, opIndex, length);
@@ -266,7 +264,7 @@ final class SnappyDecompressor
 
     private static int readTrailer(byte[] data, int index, int bytes)
     {
-        return loadInt(data, index) & wordmask[bytes];
+        return SnappyInternalUtils.loadInt(data, index) & wordmask[bytes];
     }
 
     private static void copyLiteral(byte[] input, int ipIndex, byte[] output, int opIndex, int length)
@@ -284,15 +282,15 @@ final class SnappyDecompressor
         }
 
         if (length <= 16 && spaceLeft >= 16 && readableBytes >= 16) {
-            copyLong(input, ipIndex, output, opIndex);
-            copyLong(input, ipIndex + 8, output, opIndex + 8);
+            SnappyInternalUtils.copyLong(input, ipIndex, output, opIndex);
+            SnappyInternalUtils.copyLong(input, ipIndex + 8, output, opIndex + 8);
         }
         else {
             int fastLength = length & 0xFFFFFFF8;
             if (fastLength <= 64) {
                 // copy long-by-long
                 for (int i = 0; i < fastLength; i += 8) {
-                    copyLong(input, ipIndex + i, output, opIndex + i);
+                    SnappyInternalUtils.copyLong(input, ipIndex + i, output, opIndex + i);
                 }
 
                 // copy byte-by-byte
@@ -305,7 +303,7 @@ final class SnappyDecompressor
                 }
             }
             else {
-                copyMemory(input, ipIndex, output, opIndex, length);
+                SnappyInternalUtils.copyMemory(input, ipIndex, output, opIndex, length);
             }
         }
     }
@@ -335,12 +333,12 @@ final class SnappyDecompressor
     {
         int copiedLength = 0;
         while ((opIndex + copiedLength) - srcIndex < 8) {
-            copyLong(output, srcIndex, output, opIndex + copiedLength);
+            SnappyInternalUtils.copyLong(output, srcIndex, output, opIndex + copiedLength);
             copiedLength += (opIndex + copiedLength) - srcIndex;
         }
 
         for (int i = 0; i < length - copiedLength; i += 8) {
-            copyLong(output, srcIndex + i, output, opIndex + copiedLength + i);
+            SnappyInternalUtils.copyLong(output, srcIndex + i, output, opIndex + copiedLength + i);
         }
     }
 

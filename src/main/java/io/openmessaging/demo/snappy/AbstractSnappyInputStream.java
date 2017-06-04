@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 import static java.lang.Math.min;
-import static org.iq80.snappy.SnappyInternalUtils.*;
 
 /**
  * A common base class for frame based snappy input streams.
@@ -93,7 +92,7 @@ abstract class AbstractSnappyInputStream
         // stream must begin with stream header
         byte[] actualHeader = new byte[expectedHeader.length];
 
-        int read = readBytes(in, actualHeader, 0, actualHeader.length);
+        int read = SnappyInternalUtils.readBytes(in, actualHeader, 0, actualHeader.length);
         if (read < expectedHeader.length) {
             throw new EOFException("encountered EOF while reading stream header");
         }
@@ -125,8 +124,8 @@ abstract class AbstractSnappyInputStream
     public int read(byte[] output, int offset, int length)
             throws IOException
     {
-        checkNotNull(output, "output is null");
-        checkPositionIndexes(offset, offset + length, output.length);
+        SnappyInternalUtils.checkNotNull(output, "output is null");
+        SnappyInternalUtils.checkPositionIndexes(offset, offset + length, output.length);
         if (closed) {
             throw new IOException("Stream is closed");
         }
@@ -230,7 +229,7 @@ abstract class AbstractSnappyInputStream
             allocateBuffersBasedOnSize(frameMetaData.length);
         }
 
-        int actualRead = readBytes(in, input, 0, frameMetaData.length);
+        int actualRead = SnappyInternalUtils.readBytes(in, input, 0, frameMetaData.length);
         if (actualRead != frameMetaData.length) {
             throw new EOFException("unexpectd EOF when reading frame");
         }
@@ -290,7 +289,7 @@ abstract class AbstractSnappyInputStream
     private boolean readBlockHeader()
             throws IOException
     {
-        int read = readBytes(in, frameHeader, 0, frameHeader.length);
+        int read = SnappyInternalUtils.readBytes(in, frameHeader, 0, frameHeader.length);
 
         if (read == -1) {
             return false;

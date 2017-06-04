@@ -1,6 +1,6 @@
 package io.openmessaging.demo;
 
-import org.iq80.snappy.SnappyFramedOutputStream;
+import io.openmessaging.demo.snappy.SnappyFramedOutputStream;
 
 import java.io.*;
 import java.util.HashMap;

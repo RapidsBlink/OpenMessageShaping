@@ -15,14 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static org.iq80.snappy.Crc32C.maskedCrc32c;
-import static org.iq80.snappy.Snappy.maxCompressedLength;
-import static org.iq80.snappy.SnappyInternalUtils.*;
+import static io.openmessaging.demo.snappy.Crc32C.maskedCrc32c;
 
 /**
  * This is a base class supporting both the {@link SnappyOutputStream} and
@@ -59,13 +57,13 @@ abstract class AbstractSnappyOutputStream
     public AbstractSnappyOutputStream(OutputStream out, int blockSize, double minCompressionRatio)
             throws IOException
     {
-        this.out = checkNotNull(out, "out is null");
-        checkArgument(minCompressionRatio > 0 && minCompressionRatio <= 1.0, "minCompressionRatio %1s must be between (0,1.0].", minCompressionRatio);
+        this.out = SnappyInternalUtils.checkNotNull(out, "out is null");
+        SnappyInternalUtils.checkArgument(minCompressionRatio > 0 && minCompressionRatio <= 1.0, "minCompressionRatio %1s must be between (0,1.0].", minCompressionRatio);
         this.minCompressionRatio = minCompressionRatio;
         this.recycler = BufferRecycler.instance();
         this.blockSize = blockSize;
         this.buffer = recycler.allocOutputBuffer(blockSize);
-        this.outputBuffer = recycler.allocEncodingBuffer(maxCompressedLength(blockSize));
+        this.outputBuffer = recycler.allocEncodingBuffer(Snappy.maxCompressedLength(blockSize));
 
         writeHeader(out);
     }
@@ -96,8 +94,8 @@ abstract class AbstractSnappyOutputStream
     public void write(byte[] input, int offset, int length)
             throws IOException
     {
-        checkNotNull(input, "input is null");
-        checkPositionIndexes(offset, offset + length, input.length);
+        SnappyInternalUtils.checkNotNull(input, "input is null");
+        SnappyInternalUtils.checkPositionIndexes(offset, offset + length, input.length);
         if (closed) {
             throw new IOException("Stream is closed");
         }
@@ -217,7 +215,7 @@ abstract class AbstractSnappyOutputStream
      */
     protected int calculateCRC32C(byte[] data, int offset, int length)
     {
-        return maskedCrc32c(data, offset, length);
+        return Crc32C.maskedCrc32c(data, offset, length);
     }
 
     /**

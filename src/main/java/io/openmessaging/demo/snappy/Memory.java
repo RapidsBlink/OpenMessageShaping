@@ -15,26 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
-/**
- * Constants for implementing x-snappy-framed.
- */
-final class SnappyFramed
+interface Memory
 {
-    public static final int COMPRESSED_DATA_FLAG = 0x00;
+    boolean fastAccessSupported();
 
-    public static final int UNCOMPRESSED_DATA_FLAG = 0x01;
+    int lookupShort(short[] data, int index);
 
-    public static final int STREAM_IDENTIFIER_FLAG = 0xff;
+    int loadByte(byte[] data, int index);
 
-    /**
-     * The header consists of the stream identifier flag, 3 bytes indicating a
-     * length of 6, and "sNaPpY" in ASCII.
-     */
-    public static final byte[] HEADER_BYTES = new byte[] {(byte) STREAM_IDENTIFIER_FLAG, 0x06, 0x00, 0x00, 0x73, 0x4e, 0x61, 0x50, 0x70, 0x59};
+    int loadInt(byte[] data, int index);
 
-    private SnappyFramed()
-    {
-    }
+    void copyLong(byte[] src, int srcIndex, byte[] dest, int destIndex);
+
+    long loadLong(byte[] data, int index);
+
+    void copyMemory(byte[] input, int inputIndex, byte[] output, int outputIndex, int length);
 }

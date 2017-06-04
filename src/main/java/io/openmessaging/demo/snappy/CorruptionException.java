@@ -15,21 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
-interface Memory
+public class CorruptionException
+        extends RuntimeException
 {
-    boolean fastAccessSupported();
+    public CorruptionException()
+    {
+    }
 
-    int lookupShort(short[] data, int index);
+    public CorruptionException(String message)
+    {
+        super(message);
+    }
 
-    int loadByte(byte[] data, int index);
+    public CorruptionException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
 
-    int loadInt(byte[] data, int index);
-
-    void copyLong(byte[] src, int srcIndex, byte[] dest, int destIndex);
-
-    long loadLong(byte[] data, int index);
-
-    void copyMemory(byte[] input, int inputIndex, byte[] output, int outputIndex, int length);
+    public CorruptionException(Throwable cause)
+    {
+        super(cause);
+    }
 }

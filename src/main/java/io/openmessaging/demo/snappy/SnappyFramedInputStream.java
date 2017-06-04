@@ -15,13 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.iq80.snappy;
+package io.openmessaging.demo.snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.iq80.snappy.SnappyFramed.*;
-import static org.iq80.snappy.SnappyFramedOutputStream.MAX_BLOCK_SIZE;
 
 /**
  * Implements the <a href="http://snappy.googlecode.com/svn/trunk/framing_format.txt" >x-snappy-framed</a> as an {@link InputStream}.
@@ -32,7 +29,7 @@ public class SnappyFramedInputStream
     public SnappyFramedInputStream(InputStream in, boolean verifyChecksums)
             throws IOException
     {
-        super(in, MAX_BLOCK_SIZE, 4, verifyChecksums, HEADER_BYTES);
+        super(in, SnappyFramedOutputStream.MAX_BLOCK_SIZE, 4, verifyChecksums, SnappyFramed.HEADER_BYTES);
     }
 
     @Override
@@ -47,15 +44,15 @@ public class SnappyFramedInputStream
         FrameAction frameAction;
         int flag = frameHeader[0] & 0xFF;
         switch (flag) {
-            case COMPRESSED_DATA_FLAG:
+            case SnappyFramed.COMPRESSED_DATA_FLAG:
                 frameAction = FrameAction.UNCOMPRESS;
                 minLength = 5;
                 break;
-            case UNCOMPRESSED_DATA_FLAG:
+            case SnappyFramed.UNCOMPRESSED_DATA_FLAG:
                 frameAction = FrameAction.RAW;
                 minLength = 5;
                 break;
-            case STREAM_IDENTIFIER_FLAG:
+            case SnappyFramed.STREAM_IDENTIFIER_FLAG:
                 if (length != 6) {
                     throw new IOException("stream identifier chunk with invalid length: " + length);
                 }
