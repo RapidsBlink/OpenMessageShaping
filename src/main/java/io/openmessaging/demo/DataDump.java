@@ -16,17 +16,11 @@ import java.util.zip.ZipOutputStream;
 
 
 public class DataDump {
-    private static Set<String> folderSet;
-    private static ReentrantReadWriteLock folderRWLock;
-
-    static {
-        folderRWLock = new ReentrantReadWriteLock();
-        folderSet = new HashSet<>();
-    }
+    private static Set<String> folderSet = new HashSet<>();
+    private static ReentrantReadWriteLock folderRWLock = new ReentrantReadWriteLock();
 
     private final String rootPath;
     private HashMap<String, BufferedWriter> myFileName;
-
 
     public DataDump(String folderRootPath) {
         rootPath = folderRootPath;

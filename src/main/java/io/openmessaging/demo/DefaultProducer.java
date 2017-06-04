@@ -5,16 +5,12 @@ import io.openmessaging.*;
 public class DefaultProducer implements Producer {
     private MessageFactory messageFactory = new DefaultMessageFactory();
     private KeyValue properties;
-
     private DataDump dataDump;
-//    private MessageSerialization messageSerialization;
 
     public DefaultProducer(KeyValue properties) {
         this.properties = properties;
         this.dataDump = new DataDump(properties.getString("STORE_PATH"));
-//        this.messageSerialization = new MessageSerialization();
     }
-
 
     @Override
     public BytesMessage createBytesMessageToTopic(String topic, byte[] body) {
@@ -43,12 +39,8 @@ public class DefaultProducer implements Producer {
 
     @Override
     public void send(Message message) {
-        if (message == null) throw new ClientOMSException("Message should not be null");
         String topic = message.headers().getString(MessageHeader.TOPIC);
         String queue = message.headers().getString(MessageHeader.QUEUE);
-        if ((topic == null && queue == null) || (topic != null && queue != null)) {
-            throw new ClientOMSException(String.format("Queue:%s Topic:%s should put one and only one", true, queue));
-        }
         dataDump.writeToFile(topic != null ? topic : queue, (DefaultBytesMessage) message);
     }
 

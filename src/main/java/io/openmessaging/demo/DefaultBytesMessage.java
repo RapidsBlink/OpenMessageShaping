@@ -105,7 +105,6 @@ public class DefaultBytesMessage implements BytesMessage {
     }
 
     static public DefaultBytesMessage valueOf(String myString) {
-//        System.out.println(myString);
         String[] threeObjects = myString.split(Constants.OBJ_SPLITTER);
         DefaultBytesMessage message = new DefaultBytesMessage(threeObjects[0].getBytes());
         if (threeObjects[1].length() > 0) {

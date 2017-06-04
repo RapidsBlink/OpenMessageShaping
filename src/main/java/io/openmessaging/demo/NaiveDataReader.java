@@ -1,9 +1,11 @@
 package io.openmessaging.demo;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by yche on 5/27/17.
@@ -20,7 +22,6 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
     private int fileIndex;
 
     // 3rd-level one file
-//    private final static int BUFFER_SIZE = 4 * 1024 * 1024;
     private BufferedReader bufferedReader;
     private String tmpBinString;
 
@@ -33,7 +34,7 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
         fileIndex = 0;
     }
 
-    private void fetchNextFile() throws FileNotFoundException {
+    private void fetchNextFile() {
         try {
             GZIPInputStream zip = new GZIPInputStream(new FileInputStream(files[fileIndex]));
             bufferedReader = new BufferedReader(new InputStreamReader(zip));
@@ -65,10 +66,6 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
         // 3rd-level: one file
         try {
             fetchNextFile();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        try {
             tmpBinString = bufferedReader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
