@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Created by will on 25/5/2017.
@@ -32,7 +33,7 @@ public class DataDump {
         myFileName = new HashMap<>();
     }
 
-    public void writeToFile(String topicName, DefaultBytesMessage message){
+    public void writeToFile(String topicName, DefaultBytesMessage message) {
         if (!myFileName.containsKey(topicName)) {
             createFile(topicName);
         }
@@ -57,8 +58,7 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-            MyGZIPOutputStream zip = new MyGZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
-            zip.setLevel(Deflater.BEST_COMPRESSION);
+            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(rootPath + File.separator + folderName + File.separator + fileName)));
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
             myFileName.put(folderName, writer);
         } catch (IOException e) {
