@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
 /**
  * Created by yche on 5/27/17.
@@ -36,7 +37,7 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     private void fetchNextFile() {
         try {
-            GZIPInputStream zip = new GZIPInputStream(new FileInputStream(files[fileIndex]));
+            InflaterInputStream zip = new InflaterInputStream(new FileInputStream(files[fileIndex]));
             bufferedReader = new BufferedReader(new InputStreamReader(zip));
         } catch (IOException e) {
             e.printStackTrace();
