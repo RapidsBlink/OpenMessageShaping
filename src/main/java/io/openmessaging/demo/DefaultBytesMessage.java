@@ -160,6 +160,7 @@ public class DefaultBytesMessage implements BytesMessage {
                 valueStr.append(ch);
             }
             message.putProperties(keyStr.toString(), valueStr.toString());
+            currIndex++;
         }
 
         return message;
