@@ -1,14 +1,11 @@
 package io.openmessaging.demo;
 
 import java.io.*;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipOutputStream;
 
 /**
  * Created by will on 25/5/2017.
