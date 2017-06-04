@@ -1,6 +1,8 @@
 package io.openmessaging.demo;
 
-import io.openmessaging.demo.snappy.SnappyFramedOutputStream;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4BlockOutputStream;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4Factory;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4JavaUnsafeCompressor;
 
 import java.io.*;
 import java.util.HashMap;
@@ -50,9 +52,8 @@ public class DataDump {
         String fileName = Thread.currentThread().getName();
 
         try {
-
-            SnappyFramedOutputStream zip = new SnappyFramedOutputStream(new FileOutputStream(
-                    new File(rootPath + File.separator + folderName + File.separator + fileName)));
+            LZ4BlockOutputStream zip = new LZ4BlockOutputStream(new FileOutputStream(
+                    new File(rootPath + File.separator + folderName + File.separator + fileName)), 16 * 1024, new LZ4JavaUnsafeCompressor());
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(zip));
             myFileName.put(folderName, writer);
         } catch (IOException e) {

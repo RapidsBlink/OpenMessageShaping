@@ -1,6 +1,9 @@
 package io.openmessaging.demo;
 
-import io.openmessaging.demo.snappy.SnappyFramedInputStream;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4BlockInputStream;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4Factory;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4JavaUnsafeCompressor;
+import io.openmessaging.demo.net.jpountz.lz4.LZ4JavaUnsafeFastDecompressor;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -37,7 +40,8 @@ public class NaiveDataReader implements Iterator<DefaultBytesMessage> {
 
     private void fetchNextFile() {
         try {
-            SnappyFramedInputStream zip = new SnappyFramedInputStream(new FileInputStream(files[fileIndex]), false);
+//            LZ4Factory factory = LZ4Factory.fastestJavaInstance();
+            LZ4BlockInputStream zip = new LZ4BlockInputStream(new FileInputStream(files[fileIndex]), new LZ4JavaUnsafeFastDecompressor());
             bufferedReader = new BufferedReader(new InputStreamReader(zip));
         } catch (IOException e) {
             e.printStackTrace();
