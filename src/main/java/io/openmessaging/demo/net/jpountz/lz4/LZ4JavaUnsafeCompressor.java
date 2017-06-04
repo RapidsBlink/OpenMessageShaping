@@ -67,9 +67,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
         // encode literal length
         int tokenOff = dOff++;
 
-        if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
-          throw new LZ4Exception("maxDestLen is too small");
-        }
+//        if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
+//          throw new LZ4Exception("maxDestLen is too small");
+//        }
 
         if (runLen >= LZ4Constants.RUN_MASK) {
           UnsafeUtils.writeByte(dest, tokenOff, LZ4Constants.RUN_MASK << LZ4Constants.ML_BITS);
@@ -91,9 +91,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
           sOff += LZ4Constants.MIN_MATCH;
           ref += LZ4Constants.MIN_MATCH;
           final int matchLen = LZ4UnsafeUtils.commonBytes(src, ref, sOff, srcLimit);
-          if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
-            throw new LZ4Exception("maxDestLen is too small");
-          }
+//          if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
+//            throw new LZ4Exception("maxDestLen is too small");
+//          }
           sOff += matchLen;
 
           // encode match len
@@ -138,8 +138,8 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
   @Override
   public int compress(byte[] src, final int srcOff, int srcLen, byte[] dest, final int destOff, int maxDestLen) {
 
-    UnsafeUtils.checkRange(src, srcOff, srcLen);
-    UnsafeUtils.checkRange(dest, destOff, maxDestLen);
+//    UnsafeUtils.checkRange(src, srcOff, srcLen);
+//    UnsafeUtils.checkRange(dest, destOff, maxDestLen);
     final int destEnd = destOff + maxDestLen;
 
     if (srcLen < LZ4Constants.LZ4_64K_LIMIT) {
@@ -192,9 +192,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
       // encode literal length
       int tokenOff = dOff++;
 
-      if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
-        throw new LZ4Exception("maxDestLen is too small");
-      }
+//      if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
+//        throw new LZ4Exception("maxDestLen is too small");
+//      }
 
       if (runLen >= LZ4Constants.RUN_MASK) {
         UnsafeUtils.writeByte(dest, tokenOff, LZ4Constants.RUN_MASK << LZ4Constants.ML_BITS);
@@ -215,9 +215,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
         // count nb matches
         sOff += LZ4Constants.MIN_MATCH;
         final int matchLen = LZ4UnsafeUtils.commonBytes(src, ref + LZ4Constants.MIN_MATCH, sOff, srcLimit);
-        if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
-          throw new LZ4Exception("maxDestLen is too small");
-        }
+//        if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
+//          throw new LZ4Exception("maxDestLen is too small");
+//        }
         sOff += matchLen;
 
         // encode match len
@@ -309,9 +309,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
         // encode literal length
         int tokenOff = dOff++;
 
-        if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
-          throw new LZ4Exception("maxDestLen is too small");
-        }
+//        if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
+//          throw new LZ4Exception("maxDestLen is too small");
+//        }
 
         if (runLen >= LZ4Constants.RUN_MASK) {
           ByteBufferUtils.writeByte(dest, tokenOff, LZ4Constants.RUN_MASK << LZ4Constants.ML_BITS);
@@ -333,9 +333,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
           sOff += LZ4Constants.MIN_MATCH;
           ref += LZ4Constants.MIN_MATCH;
           final int matchLen = LZ4ByteBufferUtils.commonBytes(src, ref, sOff, srcLimit);
-          if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
-            throw new LZ4Exception("maxDestLen is too small");
-          }
+//          if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
+//            throw new LZ4Exception("maxDestLen is too small");
+//          }
           sOff += matchLen;
 
           // encode match len
@@ -440,9 +440,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
       // encode literal length
       int tokenOff = dOff++;
 
-      if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
-        throw new LZ4Exception("maxDestLen is too small");
-      }
+//      if (dOff + runLen + (2 + 1 + LZ4Constants.LAST_LITERALS) + (runLen >>> 8) > destEnd) {
+//        throw new LZ4Exception("maxDestLen is too small");
+//      }
 
       if (runLen >= LZ4Constants.RUN_MASK) {
         ByteBufferUtils.writeByte(dest, tokenOff, LZ4Constants.RUN_MASK << LZ4Constants.ML_BITS);
@@ -463,9 +463,9 @@ public final class LZ4JavaUnsafeCompressor extends LZ4Compressor {
         // count nb matches
         sOff += LZ4Constants.MIN_MATCH;
         final int matchLen = LZ4ByteBufferUtils.commonBytes(src, ref + LZ4Constants.MIN_MATCH, sOff, srcLimit);
-        if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
-          throw new LZ4Exception("maxDestLen is too small");
-        }
+//        if (dOff + (1 + LZ4Constants.LAST_LITERALS) + (matchLen >>> 8) > destEnd) {
+//          throw new LZ4Exception("maxDestLen is too small");
+//        }
         sOff += matchLen;
 
         // encode match len

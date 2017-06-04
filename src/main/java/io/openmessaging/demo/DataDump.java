@@ -1,7 +1,6 @@
 package io.openmessaging.demo;
 
 import io.openmessaging.demo.net.jpountz.lz4.LZ4BlockOutputStream;
-import io.openmessaging.demo.net.jpountz.lz4.LZ4Factory;
 import io.openmessaging.demo.net.jpountz.lz4.LZ4JavaUnsafeCompressor;
 
 import java.io.*;

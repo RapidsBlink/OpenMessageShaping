@@ -18,15 +18,15 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
   public int decompress(byte[] src, final int srcOff, byte[] dest, final int destOff, int destLen) {
 
 
-    UnsafeUtils.checkRange(src, srcOff);
-    UnsafeUtils.checkRange(dest, destOff, destLen);
-
-    if (destLen == 0) {
-      if (UnsafeUtils.readByte(src, srcOff) != 0) {
-        throw new LZ4Exception("Malformed input at " + srcOff);
-      }
-      return 1;
-    }
+//    UnsafeUtils.checkRange(src, srcOff);
+//    UnsafeUtils.checkRange(dest, destOff, destLen);
+//
+//    if (destLen == 0) {
+//      if (UnsafeUtils.readByte(src, srcOff) != 0) {
+//        throw new LZ4Exception("Malformed input at " + srcOff);
+//      }
+//      return 1;
+//    }
 
 
     final int destEnd = destOff + destLen;
@@ -51,15 +51,15 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
       final int literalCopyEnd = dOff + literalLen;
 
       if (literalCopyEnd > destEnd - LZ4Constants.COPY_LENGTH) {
-        if (literalCopyEnd != destEnd) {
-          throw new LZ4Exception("Malformed input at " + sOff);
-
-        } else {
+//        if (literalCopyEnd != destEnd) {
+//          throw new LZ4Exception("Malformed input at " + sOff);
+//
+//        } else {
           LZ4UnsafeUtils.safeArraycopy(src, sOff, dest, dOff, literalLen);
           sOff += literalLen;
           dOff = literalCopyEnd;
           break; // EOF
-        }
+//        }
       }
 
       LZ4UnsafeUtils.wildArraycopy(src, sOff, dest, dOff, literalLen);
@@ -71,9 +71,9 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
       sOff += 2;
       int matchOff = dOff - matchDec;
 
-      if (matchOff < destOff) {
-        throw new LZ4Exception("Malformed input at " + sOff);
-      }
+//      if (matchOff < destOff) {
+//        throw new LZ4Exception("Malformed input at " + sOff);
+//      }
 
       int matchLen = token & LZ4Constants.ML_MASK;
       if (matchLen == LZ4Constants.ML_MASK) {
@@ -88,9 +88,9 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
       final int matchCopyEnd = dOff + matchLen;
 
       if (matchCopyEnd > destEnd - LZ4Constants.COPY_LENGTH) {
-        if (matchCopyEnd > destEnd) {
-          throw new LZ4Exception("Malformed input at " + sOff);
-        }
+//        if (matchCopyEnd > destEnd) {
+//          throw new LZ4Exception("Malformed input at " + sOff);
+//        }
         LZ4UnsafeUtils.safeIncrementalCopy(dest, matchOff, dOff, matchLen);
       } else {
         LZ4UnsafeUtils.wildIncrementalCopy(dest, matchOff, dOff, matchCopyEnd);
@@ -113,15 +113,15 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
     dest = ByteBufferUtils.inNativeByteOrder(dest);
 
 
-    ByteBufferUtils.checkRange(src, srcOff);
-    ByteBufferUtils.checkRange(dest, destOff, destLen);
+//    ByteBufferUtils.checkRange(src, srcOff);
+//    ByteBufferUtils.checkRange(dest, destOff, destLen);
 
-    if (destLen == 0) {
-      if (ByteBufferUtils.readByte(src, srcOff) != 0) {
-        throw new LZ4Exception("Malformed input at " + srcOff);
-      }
-      return 1;
-    }
+//    if (destLen == 0) {
+//      if (ByteBufferUtils.readByte(src, srcOff) != 0) {
+//        throw new LZ4Exception("Malformed input at " + srcOff);
+//      }
+//      return 1;
+//    }
 
 
     final int destEnd = destOff + destLen;
@@ -146,15 +146,15 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
       final int literalCopyEnd = dOff + literalLen;
 
       if (literalCopyEnd > destEnd - LZ4Constants.COPY_LENGTH) {
-        if (literalCopyEnd != destEnd) {
-          throw new LZ4Exception("Malformed input at " + sOff);
-
-        } else {
+//        if (literalCopyEnd != destEnd) {
+//          throw new LZ4Exception("Malformed input at " + sOff);
+//
+//        } else {
           LZ4ByteBufferUtils.safeArraycopy(src, sOff, dest, dOff, literalLen);
           sOff += literalLen;
           dOff = literalCopyEnd;
           break; // EOF
-        }
+//        }
       }
 
       LZ4ByteBufferUtils.wildArraycopy(src, sOff, dest, dOff, literalLen);
@@ -166,9 +166,9 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
       sOff += 2;
       int matchOff = dOff - matchDec;
 
-      if (matchOff < destOff) {
-        throw new LZ4Exception("Malformed input at " + sOff);
-      }
+//      if (matchOff < destOff) {
+//        throw new LZ4Exception("Malformed input at " + sOff);
+//      }
 
       int matchLen = token & LZ4Constants.ML_MASK;
       if (matchLen == LZ4Constants.ML_MASK) {
@@ -183,9 +183,9 @@ public final class LZ4JavaUnsafeFastDecompressor extends LZ4FastDecompressor {
       final int matchCopyEnd = dOff + matchLen;
 
       if (matchCopyEnd > destEnd - LZ4Constants.COPY_LENGTH) {
-        if (matchCopyEnd > destEnd) {
-          throw new LZ4Exception("Malformed input at " + sOff);
-        }
+//        if (matchCopyEnd > destEnd) {
+//          throw new LZ4Exception("Malformed input at " + sOff);
+//        }
         LZ4ByteBufferUtils.safeIncrementalCopy(dest, matchOff, dOff, matchLen);
       } else {
         LZ4ByteBufferUtils.wildIncrementalCopy(dest, matchOff, dOff, matchCopyEnd);
