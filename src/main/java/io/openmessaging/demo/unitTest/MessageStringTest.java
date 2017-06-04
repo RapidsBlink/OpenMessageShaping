@@ -8,9 +8,9 @@ import io.openmessaging.demo.DefaultBytesMessage;
 public class MessageStringTest {
     public static void main(String[] args) {
         DefaultBytesMessage defaultBytesMessage = new DefaultBytesMessage(new String("Hello").getBytes());
-        defaultBytesMessage.putHeaders("pro1", "pro1_val");
-        defaultBytesMessage.putHeaders("pro2", 1);
-        defaultBytesMessage.putHeaders("pro2", 1);
+        defaultBytesMessage.putHeaders("h1", "pro1_val");
+        defaultBytesMessage.putHeaders("h2", 1);
+        defaultBytesMessage.putHeaders("head2", 1.0);
         defaultBytesMessage.putProperties("pro2", 1);
         defaultBytesMessage.putProperties("pro3", 2L);
 
